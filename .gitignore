@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data and embeddings
+data/raw/
+embeddings/
+*.npy
+*.index
+
+# MLflow
+mlruns/
+
+# DVC cache
+.dvc/cache/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
