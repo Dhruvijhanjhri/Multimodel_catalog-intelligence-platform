@@ -1,29 +1,83 @@
+# ==========================
 # Python
+# ==========================
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+*.so
 
-# Virtual environment
+# ==========================
+# Virtual Environment
+# ==========================
 .venv/
+venv/
+env/
 
+# ==========================
 # Jupyter
+# ==========================
 .ipynb_checkpoints/
 
-# Data and embeddings
-data/raw/
-embeddings/
-*.npy
-*.index
+# ==========================
+# IDE
+# ==========================
+.vscode/
+.idea/
 
-# MLflow
+# ==========================
+# Logs
+# ==========================
+*.log
+logs/
+
+# ==========================
+# ML Generated Files
+# ==========================
+embeddings/
+faiss/
+models/
 mlruns/
 
-# DVC cache
+*.npy
+*.npz
+*.index
+*.faiss
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.joblib
+*.pkl
+
+# ==========================
+# DVC
+# ==========================
 .dvc/cache/
 
-# VS Code
-.vscode/
+# ==========================
+# Temporary Files
+# ==========================
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
 
-# Logs
-*.log
+# ==========================
+# Dataset (Raw Only)
+# ==========================
+data/raw/
+
+# Generated datasets
+data/splits/
+
+# ==========================
+# Streamlit
+# ==========================
+.streamlit/secrets.toml
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+.env.*
