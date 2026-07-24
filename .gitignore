@@ -81,3 +81,15 @@ data/splits/
 # ==========================
 .env
 .env.*
+
+# Database
+*.db
+
+# Trained models
+models/
+
+# FAISS
+faiss/
+
+# Embeddings
+embeddings/
