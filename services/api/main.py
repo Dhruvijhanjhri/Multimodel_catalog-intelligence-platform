@@ -8,6 +8,7 @@ import pandas as pd
 import open_clip
 import torch
 import sqlite3
+from services.inference.predict import predict
 
 # -----------------------------
 # App
@@ -17,6 +18,13 @@ app = FastAPI(
     version="1.0.0",
     description="Production-style multimodal catalog intelligence API"
 )
+
+@app.get("/")
+def root():
+    return {
+        "message": "AI Catalog Intelligence Platform API",
+        "status": "running"
+    }
 
 # -----------------------------
 # Load model
@@ -70,6 +78,18 @@ print("OpenCLIP loaded for semantic search")
 # -----------------------------
 class PredictRequest(BaseModel):
     title: str
+    image_path: str
+
+
+@app.post("/predict")
+def predict_endpoint(request: PredictRequest):
+
+    result = predict(
+        image_path=request.image_path,
+        title=request.title
+    )
+
+    return result
 
 class DuplicateRequest(BaseModel):
     query: str
@@ -89,27 +109,6 @@ def health():
 # -----------------------------
 # Predict
 # -----------------------------
-@app.post("/predict")
-def predict(request: PredictRequest):
-    # Predict class
-    prediction = baseline_model.predict([request.title])[0]
-    
-    # Predict probabilities
-    probabilities = baseline_model.predict_proba([request.title])[0]
-    
-    # Confidence
-    confidence = float(np.max(probabilities))
-    
-    # Review rule
-    needs_review = confidence < 0.70
-    
-    return {
-        "title": request.title,
-        "category": prediction,
-        "confidence": round(confidence, 4),
-        "needs_review": needs_review
-    }
-
 @app.post("/find-duplicates")
 def find_duplicates(request: DuplicateRequest):
     # Encode query
@@ -192,3 +191,7 @@ def get_metrics():
             "mismatch_threshold": 0.80
         }
     }
+
+print("\nRegistered Routes")
+for route in app.routes:
+    print(route.path)
