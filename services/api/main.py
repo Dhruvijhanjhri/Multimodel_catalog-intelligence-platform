@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
 from pydantic import BaseModel
 from pathlib import Path
 import joblib
@@ -9,6 +9,7 @@ import open_clip
 import torch
 import sqlite3
 from services.inference.predict import predict
+from fastapi.middleware.cors import CORSMiddleware
 
 # -----------------------------
 # App
@@ -82,11 +83,22 @@ class PredictRequest(BaseModel):
 
 
 @app.post("/predict")
-def predict_endpoint(request: PredictRequest):
+async def predict_endpoint(
+    image: UploadFile = File(...),
+    title: str = Form(...)
+):
+
+    upload_dir = PROJECT_ROOT / "uploads"
+    upload_dir.mkdir(exist_ok=True)
+
+    image_path = upload_dir / image.filename
+
+    with open(image_path, "wb") as f:
+        f.write(await image.read())
 
     result = predict(
-        image_path=request.image_path,
-        title=request.title
+        image_path=str(image_path),
+        title=title
     )
 
     return result
@@ -195,3 +207,14 @@ def get_metrics():
 print("\nRegistered Routes")
 for route in app.routes:
     print(route.path)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5000",
+        "http://localhost:5000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

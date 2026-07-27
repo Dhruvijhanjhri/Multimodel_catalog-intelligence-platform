@@ -1,117 +1,39 @@
-import streamlit as st
-import requests
+from flask import Flask, render_template, request, jsonify
 import pandas as pd
+from pathlib import Path
 
-API_BASE = "http://127.0.0.1:8000"
+app = Flask(__name__)
 
-st.set_page_config(
-    page_title="AI Catalog Intelligence Platform",
-    page_icon="🛒",
-    layout="wide"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+manifest = pd.read_parquet(
+    PROJECT_ROOT / "data" / "processed" / "image_manifest.parquet"
 )
 
-st.title("🛒 AI Catalog Intelligence Platform")
-st.caption("Production-style multimodal catalog intelligence demo")
 
-# Sidebar
-st.sidebar.header("Navigation")
-page = st.sidebar.radio(
-    "Choose a page",
-    ["Predict", "Duplicate Search", "Review Queue", "Metrics"]
-)
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-# -----------------------------
-# Predict page
-# -----------------------------
-if page == "Predict":
-    st.header("Product Category Prediction")
-    
-    title = st.text_input(
-        "Enter product title",
-        "women running sneakers with rubber sole"
-    )
-    
-    if st.button("Predict Category"):
-        response = requests.post(
-            f"{API_BASE}/predict",
-            json={"title": title}
-        )
-        
-        result = response.json()
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric("Predicted Category", result["category"])
-        
-        with col2:
-            st.metric("Confidence", f"{result['confidence']:.2%}")
-        
-        if result["needs_review"]:
-            st.warning("This product should be sent for manual review.")
-        else:
-            st.success("No manual review required.")
+@app.post("/get-title")
+def get_title():
 
-# -----------------------------
-# Duplicate search page
-# -----------------------------
-elif page == "Duplicate Search":
-    st.header("Duplicate / Similar Product Search")
-    
-    query = st.text_input(
-        "Enter product description",
-        "women trainers sneakers"
-    )
-    
-    if st.button("Find Similar Products"):
-        response = requests.post(
-            f"{API_BASE}/find-duplicates",
-            json={"query": query, "top_k": 5}
-        )
-        
-        result = response.json()
-        
-        df = pd.DataFrame(result["results"])
-        st.dataframe(df, use_container_width=True)
+    image = request.files["image"]
 
-# -----------------------------
-# Review queue page
-# -----------------------------
-elif page == "Review Queue":
-    st.header("Manual Review Queue")
-    
-    response = requests.get(f"{API_BASE}/review-queue")
-    result = response.json()
-    
-    st.metric("Total Flagged Items", result["total_items"])
-    
-    if result["items"]:
-        df = pd.DataFrame(result["items"])
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("Review queue is empty.")
+    filename = image.filename
 
-# -----------------------------
-# Metrics page
-# -----------------------------
-elif page == "Metrics":
-    st.header("System Metrics")
-    
-    response = requests.get(f"{API_BASE}/metrics")
-    metrics = response.json()
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Model")
-        st.json(metrics["model"])
-        
-        st.subheader("Embeddings")
-        st.json(metrics["embeddings"])
-    
-    with col2:
-        st.subheader("Dataset")
-        st.json(metrics["dataset"])
-        
-        st.subheader("Thresholds")
-        st.json(metrics["thresholds"])
+    row = manifest[
+        manifest["image_path"].str.endswith(filename)
+    ]
+
+    if len(row) == 0:
+        return jsonify({
+            "title": ""
+        })
+
+    return jsonify({
+        "title": row.iloc[0]["title"]
+    })
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
