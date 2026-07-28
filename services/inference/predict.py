@@ -153,21 +153,6 @@ def predict(image_path, title):
 
     duplicate_score = 0.0
 
-    if (
-        confidence < 0.70
-        or mismatch
-    ):
-
-        add_to_review_queue(
-            item_id="UNKNOWN",
-            title=title,
-            predicted_category=result["category"],
-            confidence=confidence,
-            image_similarity=similarity,
-            duplicate_score=duplicate_score,
-            reason="Low confidence or image-text mismatch"
-        )
-
     return {
         "category": result["category"],
         "confidence": round(confidence, 4),

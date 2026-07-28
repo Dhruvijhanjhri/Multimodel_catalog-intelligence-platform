@@ -10,6 +10,29 @@ import torch
 import sqlite3
 from services.inference.predict import predict
 from fastapi.middleware.cors import CORSMiddleware
+from deep_translator import GoogleTranslator
+from services.database.review_queue import add_to_review_queue
+
+def translate_to_english(text: str) -> str:
+    """
+    Translate product title to English.
+    If translation fails, return original text.
+    """
+
+    if not text or text.strip() == "":
+        return text
+
+    try:
+        translated = GoogleTranslator(
+            source="auto",
+            target="en"
+        ).translate(text)
+
+        return translated
+
+    except Exception as e:
+        print("Translation Error:", e)
+        return text
 
 # -----------------------------
 # App
@@ -53,6 +76,7 @@ print(f"Review DB: {DB_PATH}")
 
 text_embeddings = np.load(EMB_PATH)
 metadata_df = pd.read_parquet(META_PATH)
+print(metadata_df.columns.tolist())
 faiss_index = faiss.read_index(str(FAISS_PATH))
 
 print(f"Loaded {len(metadata_df)} embedding records")
@@ -96,15 +120,85 @@ async def predict_endpoint(
     with open(image_path, "wb") as f:
         f.write(await image.read())
 
+    # ---------- Translate Title ----------
+    translated_title = translate_to_english(title)
+
+    print("Original Title :", title)
+    print("Translated Title:", translated_title)
+
+    # ---------- Run AI ----------
     result = predict(
         image_path=str(image_path),
-        title=title
+        title=translated_title
     )
+
+    # -----------------------------------------
+    # Automatic Review Queue Logic
+    # -----------------------------------------
+
+    duplicate_score = 0.0
+    reason = []
+
+    # Low confidence
+    if result["confidence"] < 0.70:
+        reason.append("Low Confidence")
+
+    # Image/Text mismatch
+    if result["mismatch"]:
+        reason.append("Image-Text Mismatch")
+
+    # Duplicate detection
+    try:
+
+        with torch.no_grad():
+
+            tokens = clip_tokenizer([translated_title]).to(device)
+
+            features = clip_model.encode_text(tokens)
+
+            features = features / features.norm(dim=-1, keepdim=True)
+
+            query_emb = features.cpu().numpy().astype(np.float32)
+
+        scores, indices = faiss_index.search(query_emb, 1)
+
+        duplicate_score = float(scores[0][0])
+
+        if duplicate_score > 0.90:
+            reason.append("Possible Duplicate")
+
+    except Exception as e:
+
+        print("Duplicate check failed:", e)
+
+    # Save only if needed
+    if reason:
+
+        add_to_review_queue(
+
+            item_id=image.filename,
+
+            image_name=image.filename,
+
+            title=title,
+
+            predicted_category=result["category"],
+
+            confidence=result["confidence"],
+
+            image_similarity=result["image_title_similarity"],
+
+            duplicate_score=duplicate_score,
+
+            reason=", ".join(reason)
+
+        )
 
     return result
 
 class DuplicateRequest(BaseModel):
     query: str
+    category: str | None = None
     top_k: int = 5
 
 # -----------------------------
@@ -123,31 +217,56 @@ def health():
 # -----------------------------
 @app.post("/find-duplicates")
 def find_duplicates(request: DuplicateRequest):
-    # Encode query
+
     with torch.no_grad():
+
         tokens = clip_tokenizer([request.query]).to(device)
+
         features = clip_model.encode_text(tokens)
+
         features = features / features.norm(dim=-1, keepdim=True)
+
         query_emb = features.cpu().numpy().astype(np.float32)
-    
-    # Search
-    scores, indices = faiss_index.search(query_emb, request.top_k)
-    
+
+    # Search more candidates so filtering still leaves enough results
+    scores, indices = faiss_index.search(query_emb, 50)
+
     results = []
-    
+
     for score, idx in zip(scores[0], indices[0]):
+
         row = metadata_df.iloc[idx]
-        
+
+        # Keep only predicted category (if provided)
+        if (
+            request.category is not None
+            and row["target_category"] != request.category
+        ):
+            continue
+
         results.append({
+
             "item_id": row["item_id"],
+
             "title": row["title"],
+
             "category": row["target_category"],
-            "similarity": round(float(score), 4)
+
+            "similarity": round(float(score), 4),
+
+            "image": Path(row["image_path"]).name
+
         })
-    
+
+        if len(results) == request.top_k:
+            break
+
     return {
+
         "query": request.query,
+
         "results": results
+
     }
 
 @app.get("/review-queue")
@@ -158,12 +277,14 @@ def get_review_queue():
     SELECT
         id,
         item_id,
+        image_name,
         title,
         category,
         confidence,
         mismatch_score,
         duplicate_score,
         reason,
+        status,
         created_at
     FROM review_queue
     ORDER BY created_at DESC
@@ -218,3 +339,4 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+

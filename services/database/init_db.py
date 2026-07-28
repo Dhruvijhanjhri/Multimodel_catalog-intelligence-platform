@@ -16,19 +16,23 @@ CREATE TABLE IF NOT EXISTS review_queue(
 
     item_id TEXT,
 
+    image_name TEXT,
+
     title TEXT,
 
-    predicted_category TEXT,
+    category TEXT,
 
     confidence REAL,
 
-    image_similarity REAL,
+    mismatch_score REAL,
 
     duplicate_score REAL,
 
     reason TEXT,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    status TEXT DEFAULT 'Pending',
+
+    created_at TEXT
 
 )
 """)

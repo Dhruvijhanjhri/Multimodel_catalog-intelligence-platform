@@ -8,6 +8,7 @@ DB_PATH = PROJECT_ROOT / "services" / "review_queue.db"
 
 def add_to_review_queue(
     item_id,
+    image_name,
     title,
     predicted_category,
     confidence,
@@ -15,7 +16,6 @@ def add_to_review_queue(
     duplicate_score,
     reason,
 ):
-
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -24,25 +24,29 @@ def add_to_review_queue(
         INSERT INTO review_queue
         (
             item_id,
+            image_name,
             title,
             category,
             confidence,
             mismatch_score,
             duplicate_score,
             reason,
+            status,
             created_at
         )
 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             item_id,
+            image_name,
             title,
             predicted_category,
             confidence,
             image_similarity,
             duplicate_score,
             reason,
+            "Pending",
             datetime.now().isoformat()
         )
     )

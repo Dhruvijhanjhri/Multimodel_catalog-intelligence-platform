@@ -14,37 +14,39 @@ h1{
 
 .card{
 
-    border:none;
+border:none;
 
-    border-radius:18px;
+border-radius:18px;
 
-    transition:.25s;
+box-shadow:0 8px 25px rgba(0,0,0,.08);
+
+transition:.3s;
 
 }
 
 .card:hover{
 
-    transform:translateY(-4px);
+transform:translateY(-2px);
 
-    box-shadow:0 10px 30px rgba(0,0,0,.12);
+box-shadow:0 15px 35px rgba(0,0,0,.12);
 
 }
 
 #preview{
 
-    width:100%;
+width:100%;
 
-    max-height:320px;
+height:300px;
 
-    object-fit:contain;
+object-fit:contain;
 
-    border-radius:15px;
+border-radius:12px;
 
-    border:2px solid #ececec;
+border:1px solid #ddd;
 
-    background:white;
+background:#fafafa;
 
-    padding:10px;
+padding:10px;
 
 }
 
@@ -117,5 +119,49 @@ thead{
 .card-body h3{
 
     font-weight:600;
+
+}
+
+.similar-title{
+
+font-size:18px;
+
+font-weight:600;
+
+line-height:1.4;
+
+display:-webkit-box;
+
+-webkit-line-clamp:2;
+
+-webkit-box-orient:vertical;
+
+overflow:hidden;
+
+margin-bottom:12px;
+
+}
+
+.similarity-high{
+
+color:#198754;
+
+font-weight:700;
+
+}
+
+.similarity-medium{
+
+color:#fd7e14;
+
+font-weight:700;
+
+}
+
+.similarity-low{
+
+color:#dc3545;
+
+font-weight:700;
 
 }
