@@ -72,6 +72,9 @@ FAISS_PATH = PROJECT_ROOT / "embeddings" / "faiss.index"
 # -----------------------------
 DB_PATH = PROJECT_ROOT / "services" / "review_queue.db"
 
+print("\nDashboard DB Path:")
+print(DB_PATH.resolve())
+
 print(f"Review DB: {DB_PATH}")
 
 text_embeddings = np.load(EMB_PATH)
@@ -287,6 +290,7 @@ def get_review_queue():
         status,
         created_at
     FROM review_queue
+    WHERE status='Pending'
     ORDER BY created_at DESC
     """
 
@@ -296,6 +300,81 @@ def get_review_queue():
     return {
         "total_items": len(df),
         "items": df.to_dict(orient="records")
+    }
+
+@app.put("/review-queue/{item_id}/approve")
+def approve_review(item_id: int):
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE review_queue
+        SET status='Approved'
+        WHERE id=?
+        """,
+        (item_id,)
+    )
+
+    conn.commit()
+
+    updated = cursor.rowcount
+
+    conn.close()
+
+    return {
+        "success": updated > 0,
+        "message": "Review Approved Successfully"
+    }
+
+@app.put("/review-queue/{item_id}/reject")
+def reject_review(item_id: int):
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE review_queue
+        SET status='Rejected'
+        WHERE id=?
+        """,
+        (item_id,)
+    )
+
+    conn.commit()
+
+    updated = cursor.rowcount
+
+    conn.close()
+
+    return {
+        "success": updated > 0,
+        "message": "Review Rejected Successfully"
+    }
+
+@app.delete("/review-queue/{review_id}")
+def delete_review(review_id: int):
+
+    conn = sqlite3.connect(DB_PATH)
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        DELETE FROM review_queue
+        WHERE id = ?
+        """,
+        (review_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "success": True,
+        "message": "Review deleted"
     }
 
 @app.get("/metrics")
@@ -325,9 +404,42 @@ def get_metrics():
         }
     }
 
+@app.get("/dashboard-charts")
+def dashboard_charts():
+
+    category_counts = (
+        metadata_df["target_category"]
+        .value_counts()
+        .to_dict()
+    )
+
+    conn = sqlite3.connect(DB_PATH)
+
+    reason_df = pd.read_sql_query(
+        """
+        SELECT reason,
+               COUNT(*) as total
+        FROM review_queue
+        GROUP BY reason
+        """,
+        conn
+    )
+
+    conn.close()
+
+    return {
+
+        "categories": category_counts,
+
+        "reasons": reason_df.to_dict(
+            orient="records"
+        )
+
+    }
+
 print("\nRegistered Routes")
 for route in app.routes:
-    print(route.path)
+    print(route.methods, route.path)
 
 app.add_middleware(
     CORSMiddleware,

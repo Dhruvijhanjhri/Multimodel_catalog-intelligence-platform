@@ -31,78 +31,132 @@
 <!-- HEADER -->
 <!-- ===================================================== -->
 
-<div class="text-center mb-5">
+<div class="d-flex justify-content-between align-items-center mb-5">
 
-    <h1 class="display-5 fw-bold text-primary">
+    <div>
 
-        Enterprise Catalog Intelligence
+        <h1 class="display-5 fw-bold text-primary mb-1">
+            Enterprise Catalog Intelligence
+        </h1>
 
-    </h1>
+        <p class="text-muted mb-0">
+            AI-powered Multimodal Product Intelligence Platform
+        </p>
 
-    <p class="lead text-secondary mb-2">
+        <small class="text-secondary">
+            OpenCLIP • FastAPI • FAISS • PyTorch
+        </small>
 
-        Multimodal Product Classification • Similarity Search • Quality Validation
+    </div>
 
-    </p>
+    <div>
 
-    <small class="text-muted">
+        <a href="/admin"
+           class="btn btn-outline-primary px-4">
 
-        Version 1.0
+            📊 Admin Dashboard
 
-    </small>
+        </a>
+
+    </div>
 
 </div>
 
 <hr class="mb-5">
 
 <!-- ===================================================== -->
-<!-- SOURCE MODE -->
+<!-- HERO -->
 <!-- ===================================================== -->
 
-<div class="card shadow-sm border-0 mb-4">
+<div class="row align-items-center mb-5">
 
-    <div class="card-body">
+    <div class="col-lg-7">
 
-        <h4 class="mb-4">
+        <h2 class="fw-bold mb-3">
+            AI-powered Product Catalog Intelligence
+        </h2>
 
-            Product Source
+        <p class="text-muted fs-5">
 
-        </h4>
+            Classify products using multimodal AI, validate image-title
+            consistency, detect duplicate listings, retrieve similar products,
+            and automatically flag suspicious catalog entries for manual review.
 
-        <div class="form-check mb-3">
+        </p>
 
-            <input
-                class="form-check-input"
-                type="radio"
-                name="sourceMode"
-                id="catalogMode"
-                checked>
+        <div class="mt-4">
 
-            <label
-                class="form-check-label"
-                for="catalogMode">
+            <button
+                id="catalogHeroBtn"
+                class="btn btn-primary">
 
-                Analyze Existing Catalog Product
+                Analyze Existing Catalog
 
-            </label>
+            </button>
 
-        </div>
-
-        <div class="form-check">
-
-            <input
-                class="form-check-input"
-                type="radio"
-                name="sourceMode"
-                id="uploadMode">
-
-            <label
-                class="form-check-label"
-                for="uploadMode">
+            <button
+                id="uploadHeroBtn"
+                class="btn btn-outline-primary">
 
                 Analyze New Product
 
-            </label>
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-5">
+
+        <div class="card shadow-sm border-0">
+
+            <div class="card-body">
+
+                <h5 class="fw-bold mb-4">
+                    Platform Capabilities
+                </h5>
+
+                <div class="mb-3">
+
+                    <strong>Product Classification</strong>
+
+                    <p class="text-muted small mb-0">
+                        Multimodal category prediction using OpenCLIP.
+                    </p>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <strong>Duplicate Detection</strong>
+
+                    <p class="text-muted small mb-0">
+                        Semantic similarity search powered by FAISS.
+                    </p>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <strong>Image–Text Validation</strong>
+
+                    <p class="text-muted small mb-0">
+                        Detect mismatched product listings.
+                    </p>
+
+                </div>
+
+                <div>
+
+                    <strong>Review Queue</strong>
+
+                    <p class="text-muted small mb-0">
+                        Automatically flag products requiring manual review.
+                    </p>
+
+                </div>
+
+            </div>
 
         </div>
 
@@ -116,7 +170,8 @@
 
 <div
     id="catalogSection"
-    class="card shadow-sm border-0 mb-4">
+    class="card shadow-sm border-0 mb-4"
+    style="display:none;">
 
     <div class="card-body">
 
@@ -652,19 +707,17 @@ No results
 <!-- FOOTER -->
 <!-- ===================================================== -->
 
-<footer class="text-center mt-5">
+<footer class="text-center py-4 mt-5">
 
-    <hr class="mb-4">
+    <hr>
 
-    <h6 class="fw-semibold text-dark mb-2">
-
-        Enterprise Catalog Intelligence
-
+    <h6 class="fw-bold">
+        Enterprise Catalog Intelligence Platform
     </h6>
 
     <p class="text-muted mb-1">
 
-        Powered by OpenCLIP • PyTorch • FastAPI • FAISS
+        OpenCLIP • PyTorch • FastAPI • FAISS • Multimodal AI
 
     </p>
 
@@ -675,8 +728,6 @@ No results
     </small>
 
 </footer>
-
-</div>
 
 <!-- ===================================================== -->
 <!-- BOOTSTRAP -->

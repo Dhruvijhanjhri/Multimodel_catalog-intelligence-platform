@@ -130,5 +130,9 @@ def get_image(filename):
 
     return "", 404
 
+@app.route("/admin")
+def admin_dashboard():
+    return render_template("admin_dashboard.html")
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

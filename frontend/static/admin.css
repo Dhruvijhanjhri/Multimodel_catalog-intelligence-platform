@@ -1,0 +1,39 @@
+body{
+
+    font-family: Arial, Helvetica, sans-serif;
+
+}
+
+.metric-card{
+
+    background:white;
+
+    border-radius:12px;
+
+    padding:25px;
+
+    box-shadow:0 3px 10px rgba(0,0,0,.08);
+
+    text-align:center;
+
+}
+
+.metric-card h6{
+
+    color:#777;
+
+}
+
+.metric-card h3{
+
+    margin-top:10px;
+
+    font-weight:bold;
+
+}
+
+table td{
+
+    vertical-align:middle;
+
+}

@@ -165,3 +165,31 @@ color:#dc3545;
 font-weight:700;
 
 }
+
+body{
+    background:#f5f7fb;
+}
+
+.card{
+    border-radius:16px;
+}
+
+.btn{
+    border-radius:10px;
+}
+
+.card-header{
+    border-bottom:none;
+}
+
+.display-5{
+    letter-spacing:-0.5px;
+}
+
+footer{
+    color:#6c757d;
+}
+
+.shadow-sm{
+    box-shadow:0 10px 25px rgba(0,0,0,.05)!important;
+}

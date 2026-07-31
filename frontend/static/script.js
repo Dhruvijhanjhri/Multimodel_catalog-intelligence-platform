@@ -14,9 +14,6 @@ const FASTAPI_URL = "http://127.0.0.1:8000";
 // DOM Elements
 // -----------------------------------------------------
 
-const catalogMode = document.getElementById("catalogMode");
-const uploadMode = document.getElementById("uploadMode");
-
 const catalogSection = document.getElementById("catalogSection");
 const uploadSection = document.getElementById("uploadSection");
 
@@ -33,6 +30,12 @@ const uploadForm = document.getElementById("predictForm");
 
 const catalogAnalyzeBtn =
 document.getElementById("catalogAnalyzeBtn");
+
+const catalogHeroBtn = document.getElementById("catalogHeroBtn");
+const uploadHeroBtn = document.getElementById("uploadHeroBtn");
+
+console.log("Catalog Hero:", catalogHeroBtn);
+console.log("Upload Hero :", uploadHeroBtn);
 
 // Dashboard
 
@@ -84,23 +87,31 @@ document.getElementById("analysisSection");
 
 let selectedProduct = null;
 
-// -----------------------------------------------------
-// Source Mode
-// -----------------------------------------------------
 
-catalogMode.addEventListener("change", () => {
+
+//-----------------------------------------------------
+// Hero Buttons
+//-----------------------------------------------------
+
+catalogHeroBtn.addEventListener("click", () => {
 
     catalogSection.style.display = "block";
-
     uploadSection.style.display = "none";
+
+    catalogSection.scrollIntoView({
+        behavior: "smooth"
+    });
 
 });
 
-uploadMode.addEventListener("change", () => {
-
-    catalogSection.style.display = "none";
+uploadHeroBtn.addEventListener("click", () => {
 
     uploadSection.style.display = "block";
+    catalogSection.style.display = "none";
+
+    uploadSection.scrollIntoView({
+        behavior: "smooth"
+    });
 
 });
 
@@ -386,16 +397,14 @@ uploadForm.addEventListener("submit", async (e) => {
 
 async function analyzeProduct(image, title) {
 
-    const button =
+    const isCatalog =
+        catalogSection.style.display !== "none";
 
-        catalogMode.checked
-
-        ? catalogAnalyzeBtn
-
+    const button = isCatalog
+        ? document.getElementById("catalogAnalyzeBtn")
         : document.getElementById("uploadAnalyzeBtn");
 
     button.disabled = true;
-
     button.innerHTML = "Analyzing...";
 
     try {
@@ -407,25 +416,17 @@ async function analyzeProduct(image, title) {
         const formData = new FormData();
 
         formData.append("image", image);
-
         formData.append("title", title);
 
         const predictResponse = await fetch(
-
             `${FASTAPI_URL}/predict`,
-
             {
-
                 method: "POST",
-
                 body: formData
-
             }
-
         );
 
         if (!predictResponse.ok)
-
             throw new Error("Prediction failed");
 
         const prediction = await predictResponse.json();
@@ -435,31 +436,18 @@ async function analyzeProduct(image, title) {
         //------------------------------------------------
 
         const duplicateResponse = await fetch(
-
             `${FASTAPI_URL}/find-duplicates`,
-
             {
-
                 method: "POST",
-
                 headers: {
-
                     "Content-Type": "application/json"
-
                 },
-
                 body: JSON.stringify({
-
                     query: title,
-
                     category: prediction.category,
-
                     top_k: 5
-
                 })
-
             }
-
         );
 
         let duplicates = [];
@@ -467,9 +455,6 @@ async function analyzeProduct(image, title) {
         if (duplicateResponse.ok) {
 
             const duplicateData = await duplicateResponse.json();
-
-            console.log("Duplicate Result:");
-            console.log(duplicateData);
 
             duplicates = duplicateData.results;
 
@@ -480,37 +465,26 @@ async function analyzeProduct(image, title) {
         //------------------------------------------------
 
         renderDashboard(
-
             prediction,
-
             duplicates
-
         );
 
     }
 
-    catch(error){
+    catch (error) {
 
         console.error(error);
 
-        alert(
-
-            "Unable to analyze product."
-
-        );
+        alert("Unable to analyze product.");
 
     }
 
-    finally{
+    finally {
 
         button.disabled = false;
 
-        button.innerHTML =
-
-            catalogMode.checked
-
+        button.innerHTML = isCatalog
             ? "Analyze Catalog Product"
-
             : "Analyze Product";
 
     }
@@ -686,3 +660,4 @@ function renderDashboard(prediction, duplicates) {
     });
 
 }
+
