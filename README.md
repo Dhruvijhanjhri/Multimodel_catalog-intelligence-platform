@@ -264,7 +264,6 @@ notebooks/
 ## Authors
 
 **Dhruvi Jhanjhri**
-
-M.Sc. Data Science
-
-Christ University
+**Harini B**
+**Gokul**
+**Godala Ashritha**
