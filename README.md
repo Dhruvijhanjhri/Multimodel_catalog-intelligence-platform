@@ -263,7 +263,7 @@ notebooks/
 
 ## Authors
 
-**Dhruvi Jhanjhri**
-**Harini B**
-**Gokul**
+**Dhruvi Jhanjhri**,
+**Harini B**,
+**Gokul**,
 **Godala Ashritha**
