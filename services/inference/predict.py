@@ -152,8 +152,6 @@ def predict(image_path, title):
 
     confidence = float(result["confidence"])
 
-    duplicate_score = 0.0
-
     return {
         "category": result["category"],
         "confidence": round(confidence, 4),
