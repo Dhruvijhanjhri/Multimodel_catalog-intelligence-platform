@@ -147,7 +147,7 @@ def predict(image_path, title):
         title
     )
 
-    mismatch = similarity < 0.20
+    mismatch = similarity < 0.175
 
     confidence = float(result["confidence"])
 
