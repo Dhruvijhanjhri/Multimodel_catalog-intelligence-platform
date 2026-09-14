@@ -3,7 +3,6 @@ import numpy as np
 import open_clip
 import torch
 from PIL import Image
-from PIL import Image
 
 # --------------------------------------------------
 # Paths
