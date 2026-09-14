@@ -4,7 +4,6 @@ import open_clip
 import torch
 from PIL import Image
 from PIL import Image
-from services.database.review_queue import add_to_review_queue
 
 # --------------------------------------------------
 # Paths
