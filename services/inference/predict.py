@@ -135,17 +135,19 @@ def predict_category(image_path, title):
     return {
         "category": LABELS[prediction.item()],
         "confidence": confidence.item(),
-        "probabilities": probabilities.squeeze().cpu().numpy()
+        "probabilities": probabilities.squeeze().cpu().numpy(),
+        "image_embedding": image_embedding,
+        "text_embedding": text_embedding
     }
 
 def predict(image_path, title):
 
     result = predict_category(image_path, title)
 
-    similarity = image_text_similarity(
-        image_path,
-        title
-    )
+    similarity = torch.sum(
+        result["image_embedding"] * result["text_embedding"],
+        dim=1
+    ).item()
 
     mismatch = similarity < 0.175
 
