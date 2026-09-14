@@ -1,8 +1,9 @@
 from pathlib import Path
 import numpy as np
 import torch
-from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
+import torch.nn as nn
+import time
 
 print("-" * 50)
 print("Multimodal Classifier Training")
@@ -24,90 +25,55 @@ print("Embedding Dir:", EMBEDDING_DIR)
 print("Model Dir    :", MODEL_DIR)
 
 # --------------------------------------------------
-# Load Embeddings
+# Load Official Split Embeddings
 # --------------------------------------------------
 
-image_embeddings = np.load(
-    EMBEDDING_DIR / "train_image_embeddings.npy"
-)
+def load_split(split_name):
 
-text_embeddings = np.load(
-    EMBEDDING_DIR / "train_text_embeddings.npy"
-)
+    image_embeddings = np.load(
+        EMBEDDING_DIR / f"{split_name}_image_embeddings.npy"
+    )
 
-labels = np.load(
-    EMBEDDING_DIR / "train_labels.npy"
-)
+    text_embeddings = np.load(
+        EMBEDDING_DIR / f"{split_name}_text_embeddings.npy"
+    )
 
-print()
-print("-" * 50)
-print("Embeddings Loaded")
-print("-" * 50)
+    labels = np.load(
+        EMBEDDING_DIR / f"{split_name}_labels.npy"
+    )
 
-print("Image Embeddings :", image_embeddings.shape)
-print("Text Embeddings  :", text_embeddings.shape)
-print("Labels           :", labels.shape)
+    features = np.concatenate(
+        [image_embeddings, text_embeddings],
+        axis=1
+    )
 
-# --------------------------------------------------
-# Feature Fusion
-# --------------------------------------------------
+    X = torch.tensor(
+        features,
+        dtype=torch.float32
+    )
 
-features = np.concatenate(
-    [image_embeddings, text_embeddings],
-    axis=1
-)
+    y = torch.tensor(
+        labels,
+        dtype=torch.long
+    )
 
-print()
-print("-" * 50)
-print("Fused Features")
-print("-" * 50)
+    print()
+    print(f"{split_name.capitalize()} Embeddings")
+    print("-" * 50)
+    print("Image Embeddings :", image_embeddings.shape)
+    print("Text Embeddings  :", text_embeddings.shape)
+    print("Labels           :", labels.shape)
+    print("Features         :", X.shape)
 
-print(features.shape)
+    return X, y
 
-# --------------------------------------------------
-# Convert to Tensors
-# --------------------------------------------------
 
-X = torch.tensor(
-    features,
-    dtype=torch.float32
-)
-
-y = torch.tensor(
-    labels,
-    dtype=torch.long
-)
-
-print()
-print("-" * 50)
-print("Tensor Shapes")
-print("-" * 50)
-
-print("Features :", X.shape)
-print("Labels   :", y.shape)
+X_train, y_train = load_split("train")
+X_val, y_val = load_split("validation")
+X_test, y_test = load_split("test")
 
 # --------------------------------------------------
-# Train / Validation Split
-# --------------------------------------------------
-
-X_train, X_val, y_train, y_val = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
-)
-
-print()
-print("-" * 50)
-print("Train / Validation Split")
-print("-" * 50)
-
-print("Train :", X_train.shape)
-print("Validation :", X_val.shape)
-
-# --------------------------------------------------
-# Tensor Dataset
+# Tensor Datasets
 # --------------------------------------------------
 
 train_dataset = TensorDataset(
@@ -118,6 +84,11 @@ train_dataset = TensorDataset(
 val_dataset = TensorDataset(
     X_val,
     y_val
+)
+
+test_dataset = TensorDataset(
+    X_test,
+    y_test
 )
 
 # --------------------------------------------------
@@ -136,20 +107,24 @@ val_loader = DataLoader(
     shuffle=False
 )
 
+test_loader = DataLoader(
+    test_dataset,
+    batch_size=128,
+    shuffle=False
+)
+
 print()
 print("-" * 50)
 print("DataLoaders Ready")
 print("-" * 50)
 
-print("Train Batches :", len(train_loader))
+print("Train Batches      :", len(train_loader))
 print("Validation Batches :", len(val_loader))
+print("Test Batches       :", len(test_loader))
 
 # --------------------------------------------------
 # Multimodal Classifier
 # --------------------------------------------------
-
-import torch.nn as nn
-
 
 class MultimodalClassifier(nn.Module):
 
@@ -182,7 +157,9 @@ class MultimodalClassifier(nn.Module):
 # Initialize Model
 # --------------------------------------------------
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
 
 model = MultimodalClassifier().to(device)
 
@@ -195,7 +172,9 @@ print(model)
 print()
 print("Device :", device)
 
-import time
+# --------------------------------------------------
+# Training Configuration
+# --------------------------------------------------
 
 criterion = nn.CrossEntropyLoss()
 
@@ -212,11 +191,15 @@ val_accs = []
 
 best_acc = 0.0
 
-print("-"*50)
+print("-" * 50)
 print("Training Started")
-print("-"*50)
+print("-" * 50)
 
 start = time.time()
+
+# --------------------------------------------------
+# Training Loop
+# --------------------------------------------------
 
 for epoch in range(epochs):
 
@@ -245,14 +228,15 @@ for epoch in range(epochs):
 
     train_losses.append(train_loss)
 
-    ######################################
+    # --------------------------------------------------
+    # Validation
+    # --------------------------------------------------
 
     model.eval()
 
     running_val_loss = 0
 
     correct = 0
-
     total = 0
 
     with torch.no_grad():
@@ -270,7 +254,9 @@ for epoch in range(epochs):
 
             preds = outputs.argmax(1)
 
-            correct += (preds == y_batch).sum().item()
+            correct += (
+                preds == y_batch
+            ).sum().item()
 
             total += y_batch.size(0)
 
@@ -279,7 +265,6 @@ for epoch in range(epochs):
     accuracy = 100 * correct / total
 
     val_losses.append(val_loss)
-
     val_accs.append(accuracy)
 
     print(
@@ -289,21 +274,67 @@ for epoch in range(epochs):
         f"Val Acc {accuracy:.2f}%"
     )
 
+    # --------------------------------------------------
+    # Save Best Model Using Validation Accuracy
+    # --------------------------------------------------
+
     if accuracy > best_acc:
 
         best_acc = accuracy
 
         torch.save(
             model.state_dict(),
-            MODEL_DIR/"multimodal_classifier.pt"
+            MODEL_DIR / "multimodal_classifier.pt"
         )
 
 end = time.time()
 
-print("-"*50)
+print("-" * 50)
 print("Training Finished")
-print("-"*50)
+print("-" * 50)
 
 print(f"Best Validation Accuracy : {best_acc:.2f}%")
-
 print(f"Training Time : {(end-start)/60:.1f} minutes")
+
+# --------------------------------------------------
+# Load Best Model
+# --------------------------------------------------
+
+print()
+print("-" * 50)
+print("Final Test Evaluation")
+print("-" * 50)
+
+model.load_state_dict(
+    torch.load(
+        MODEL_DIR / "multimodal_classifier.pt",
+        map_location=device
+    )
+)
+
+model.eval()
+
+correct = 0
+total = 0
+
+with torch.no_grad():
+
+    for X_batch, y_batch in test_loader:
+
+        X_batch = X_batch.to(device)
+        y_batch = y_batch.to(device)
+
+        outputs = model(X_batch)
+
+        preds = outputs.argmax(1)
+
+        correct += (
+            preds == y_batch
+        ).sum().item()
+
+        total += y_batch.size(0)
+
+test_accuracy = 100 * correct / total
+
+print(f"Test Accuracy : {test_accuracy:.2f}%")
+print(f"Test Samples  : {total}")
