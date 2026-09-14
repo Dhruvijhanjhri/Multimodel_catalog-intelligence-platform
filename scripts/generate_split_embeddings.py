@@ -113,10 +113,12 @@ loader = DataLoader(
 # --------------------------------------------------
 
 label_to_id = {
-    label: idx
-    for idx, label in enumerate(
-        sorted(split_df["category"].unique())
-    )
+    "Electronics_Accessories": 0,
+    "Fashion_Travel": 1,
+    "Footwear": 2,
+    "Furniture": 3,
+    "Hardware_HomeImprovement": 4,
+    "Home_Kitchen": 5
 }
 
 print("Label Mapping:", label_to_id)
