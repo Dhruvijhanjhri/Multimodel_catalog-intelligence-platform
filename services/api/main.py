@@ -383,10 +383,10 @@ def get_metrics():
 
     return {
         "model": {
-            "name": "TF-IDF + Logistic Regression",
-            "version": "1.0.0",
-            "test_accuracy": 0.9654,
-            "validation_accuracy": 0.9595
+            "name": "OpenCLIP + Multimodal Classifier",
+            "version": "2.0.0",
+            "test_accuracy": 0.9765,
+            "validation_accuracy": 0.9835
         },
         "embeddings": {
             "total_embeddings": int(text_embeddings.shape[0]),
@@ -400,7 +400,7 @@ def get_metrics():
         "thresholds": {
             "duplicate_threshold": 0.90,
             "review_threshold": 0.70,
-            "mismatch_threshold": 0.80
+            "mismatch_threshold": 0.175
         }
     }
 
