@@ -91,7 +91,7 @@ device = "cpu"
 
 clip_model, _, _ = open_clip.create_model_and_transforms(
     "ViT-B-32",
-    pretrained="openai"
+    pretrained="laion2b_s34b_b79k"
 )
 
 clip_tokenizer = open_clip.get_tokenizer("ViT-B-32")
