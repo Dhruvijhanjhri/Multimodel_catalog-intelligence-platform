@@ -93,3 +93,4 @@ faiss/
 
 # Embeddings
 embeddings/
+.env

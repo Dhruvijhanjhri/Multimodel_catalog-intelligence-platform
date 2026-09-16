@@ -7,11 +7,11 @@ import faiss
 import pandas as pd
 import open_clip
 import torch
-import sqlite3
 from services.inference.predict import predict
 from fastapi.middleware.cors import CORSMiddleware
 from deep_translator import GoogleTranslator
-from services.database.review_queue import add_to_review_queue
+from services.database.review_queue import add_to_review_queue, get_review_queue as get_postgres_review_queue
+from services.database.postgres import get_connection
 
 def translate_to_english(text: str) -> str:
     """
@@ -70,13 +70,7 @@ FAISS_PATH = PROJECT_ROOT / "embeddings" / "faiss.index"
 # -----------------------------
 # Review queue database
 # -----------------------------
-DB_PATH = PROJECT_ROOT / "services" / "review_queue.db"
-
 print("\nDashboard DB Path:")
-print(DB_PATH.resolve())
-
-print(f"Review DB: {DB_PATH}")
-
 text_embeddings = np.load(EMB_PATH)
 metadata_df = pd.read_parquet(META_PATH)
 print(metadata_df.columns.tolist())
@@ -274,53 +268,35 @@ def find_duplicates(request: DuplicateRequest):
 
 @app.get("/review-queue")
 def get_review_queue():
-    conn = sqlite3.connect(DB_PATH)
+    rows = get_postgres_review_queue()
 
-    query = """
-    SELECT
-        id,
-        item_id,
-        image_name,
-        title,
-        category,
-        confidence,
-        mismatch_score,
-        duplicate_score,
-        reason,
-        status,
-        created_at
-    FROM review_queue
-    WHERE status='Pending'
-    ORDER BY created_at DESC
-    """
-
-    df = pd.read_sql_query(query, conn)
-    conn.close()
+    pending_rows = [
+        row for row in rows
+        if row["status"] == "Pending"
+    ]
 
     return {
-        "total_items": len(df),
-        "items": df.to_dict(orient="records")
+        "total_items": len(pending_rows),
+        "items": pending_rows
     }
 
 @app.put("/review-queue/{item_id}/approve")
 def approve_review(item_id: int):
+    conn = get_connection()
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE review_queue
+            SET status = 'Approved'
+            WHERE id = %s
+            """,
+            (item_id,),
+        )
 
-    cursor.execute(
-        """
-        UPDATE review_queue
-        SET status='Approved'
-        WHERE id=?
-        """,
-        (item_id,)
-    )
+        updated = cursor.rowcount
 
     conn.commit()
-
-    updated = cursor.rowcount
-
     conn.close()
 
     return {
@@ -330,23 +306,21 @@ def approve_review(item_id: int):
 
 @app.put("/review-queue/{item_id}/reject")
 def reject_review(item_id: int):
+    conn = get_connection()
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE review_queue
+            SET status = 'Rejected'
+            WHERE id = %s
+            """,
+            (item_id,),
+        )
 
-    cursor.execute(
-        """
-        UPDATE review_queue
-        SET status='Rejected'
-        WHERE id=?
-        """,
-        (item_id,)
-    )
+        updated = cursor.rowcount
 
     conn.commit()
-
-    updated = cursor.rowcount
-
     conn.close()
 
     return {
@@ -356,24 +330,24 @@ def reject_review(item_id: int):
 
 @app.delete("/review-queue/{review_id}")
 def delete_review(review_id: int):
+    conn = get_connection()
 
-    conn = sqlite3.connect(DB_PATH)
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            DELETE FROM review_queue
+            WHERE id = %s
+            """,
+            (review_id,),
+        )
 
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        DELETE FROM review_queue
-        WHERE id = ?
-        """,
-        (review_id,)
-    )
+        deleted = cursor.rowcount
 
     conn.commit()
     conn.close()
 
     return {
-        "success": True,
+        "success": deleted > 0,
         "message": "Review deleted"
     }
 
@@ -413,28 +387,33 @@ def dashboard_charts():
         .to_dict()
     )
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
 
-    reason_df = pd.read_sql_query(
-        """
-        SELECT reason,
-               COUNT(*) as total
-        FROM review_queue
-        GROUP BY reason
-        """,
-        conn
-    )
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT
+                reason,
+                COUNT(*) AS total
+            FROM review_queue
+            GROUP BY reason
+            """
+        )
+
+        reason_rows = cursor.fetchall()
 
     conn.close()
 
+    reason_df = pd.DataFrame(
+        reason_rows,
+        columns=["reason", "total"]
+    )
+
     return {
-
         "categories": category_counts,
-
         "reasons": reason_df.to_dict(
             orient="records"
         )
-
     }
 
 print("\nRegistered Routes")

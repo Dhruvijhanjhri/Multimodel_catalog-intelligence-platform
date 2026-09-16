@@ -1,12 +1,6 @@
-import sqlite3
-from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = PROJECT_ROOT / "services" / "review_queue.db"
-
-print("\nReview Queue DB Path:")
-print(DB_PATH.resolve())
+from services.database.postgres import get_connection
 
 
 def add_to_review_queue(
@@ -19,78 +13,100 @@ def add_to_review_queue(
     duplicate_score,
     reason,
 ):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    conn = get_connection()
 
-    cursor.execute(
-        """
-        INSERT INTO review_queue
-        (
-            item_id,
-            image_name,
-            title,
-            category,
-            confidence,
-            mismatch_score,
-            duplicate_score,
-            reason,
-            status,
-            created_at
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO review_queue
+            (
+                item_id,
+                image_name,
+                title,
+                category,
+                confidence,
+                mismatch_score,
+                duplicate_score,
+                reason,
+                status,
+                created_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                item_id,
+                image_name,
+                title,
+                predicted_category,
+                confidence,
+                image_similarity,
+                duplicate_score,
+                reason,
+                "Pending",
+                datetime.now(timezone.utc),
+            ),
         )
-
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            item_id,
-            image_name,
-            title,
-            predicted_category,
-            confidence,
-            image_similarity,
-            duplicate_score,
-            reason,
-            "Pending",
-            datetime.now().isoformat()
-        )
-    )
 
     conn.commit()
     conn.close()
 
+
 def get_review_queue():
+    conn = get_connection()
 
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT
+                id,
+                item_id,
+                image_name,
+                title,
+                category,
+                confidence,
+                mismatch_score,
+                duplicate_score,
+                reason,
+                status,
+                created_at
+            FROM review_queue
+            ORDER BY created_at DESC
+            """
+        )
 
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT *
-        FROM review_queue
-        ORDER BY created_at DESC
-    """)
-
-    rows = cursor.fetchall()
+        rows = cursor.fetchall()
 
     conn.close()
 
-    return [dict(row) for row in rows]
+    columns = [
+        "id",
+        "item_id",
+        "image_name",
+        "title",
+        "category",
+        "confidence",
+        "mismatch_score",
+        "duplicate_score",
+        "reason",
+        "status",
+        "created_at",
+    ]
+
+    return [dict(zip(columns, row)) for row in rows]
 
 
-def update_review_status(item_id, status):
+def update_review_status(record_id, status):
+    conn = get_connection()
 
-    conn = sqlite3.connect(DB_PATH)
-
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        UPDATE review_queue
-        SET status = ?
-        WHERE id = ?
-        """,
-        (status, item_id)
-    )
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE review_queue
+            SET status = %s
+            WHERE id = %s
+            """,
+            (status, record_id),
+        )
 
     conn.commit()
     conn.close()
