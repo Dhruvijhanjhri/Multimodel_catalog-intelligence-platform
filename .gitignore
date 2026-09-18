@@ -94,3 +94,6 @@ faiss/
 # Embeddings
 embeddings/
 .env
+
+# Temporary uploaded test images
+uploads/
