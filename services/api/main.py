@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from deep_translator import GoogleTranslator
 from services.database.review_queue import add_to_review_queue, get_review_queue as get_postgres_review_queue
 from services.database.postgres import get_connection
+from services.database.product_reviews import add_product_review
 
 def translate_to_english(text: str) -> str:
     """
@@ -278,6 +279,31 @@ def get_review_queue():
     return {
         "total_items": len(pending_rows),
         "items": pending_rows
+    }
+
+class ProductReviewRequest(BaseModel):
+    product_id: int
+    prediction_id: int
+    reviewer: str
+    decision: str
+    corrected_category: str | None = None
+    feedback: str | None = None
+
+
+@app.post("/product-reviews")
+def create_product_review(request: ProductReviewRequest):
+    add_product_review(
+        product_id=request.product_id,
+        prediction_id=request.prediction_id,
+        reviewer=request.reviewer,
+        decision=request.decision,
+        corrected_category=request.corrected_category,
+        feedback=request.feedback,
+    )
+
+    return {
+        "success": True,
+        "message": "Product review recorded successfully"
     }
 
 @app.put("/review-queue/{item_id}/approve")
