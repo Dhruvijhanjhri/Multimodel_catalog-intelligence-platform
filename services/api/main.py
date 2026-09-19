@@ -310,49 +310,181 @@ def create_product_review(request: ProductReviewRequest):
 def approve_review(item_id: int):
     conn = get_connection()
 
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE review_queue
-            SET status = 'Approved'
-            WHERE id = %s
-            """,
-            (item_id,),
-        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    rq.item_id,
+                    rq.status,
+                    p.id AS product_id,
+                    pp.id AS prediction_id
+                FROM review_queue rq
+                JOIN products p
+                    ON p.item_id = rq.item_id
+                JOIN product_predictions pp
+                    ON pp.product_id = p.id
+                WHERE rq.id = %s
+                """,
+                (item_id,),
+            )
 
-        updated = cursor.rowcount
+            review = cursor.fetchone()
 
-    conn.commit()
-    conn.close()
+            if not review:
+                conn.rollback()
+                return {
+                    "success": False,
+                    "message": "Review not found"
+                }
 
-    return {
-        "success": updated > 0,
-        "message": "Review Approved Successfully"
-    }
+            queue_item_id, status, product_id, prediction_id = review
+
+            if status != "Pending":
+                conn.rollback()
+                return {
+                    "success": False,
+                    "message": f"Review already processed with status: {status}"
+                }
+            cursor.execute(
+                """
+                INSERT INTO product_reviews
+                (
+                    product_id,
+                    prediction_id,
+                    reviewer,
+                    decision,
+                    corrected_category,
+                    feedback,
+                    created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                """,
+                (
+                    product_id,
+                    prediction_id,
+                    "admin",
+                    "Approved",
+                    None,
+                    None,
+                ),
+            )
+
+            cursor.execute(
+                """
+                UPDATE review_queue
+                SET status = 'Approved'
+                WHERE id = %s
+                """,
+                (item_id,),
+            )
+
+            updated = cursor.rowcount
+
+        conn.commit()
+
+        return {
+            "success": updated > 0,
+            "message": "Review Approved Successfully"
+        }
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
 
 @app.put("/review-queue/{item_id}/reject")
 def reject_review(item_id: int):
     conn = get_connection()
 
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            UPDATE review_queue
-            SET status = 'Rejected'
-            WHERE id = %s
-            """,
-            (item_id,),
-        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    rq.item_id,
+                    rq.status,
+                    p.id AS product_id,
+                    pp.id AS prediction_id
+                FROM review_queue rq
+                JOIN products p
+                    ON p.item_id = rq.item_id
+                JOIN product_predictions pp
+                    ON pp.product_id = p.id
+                WHERE rq.id = %s
+                """,
+                (item_id,),
+            )
 
-        updated = cursor.rowcount
+            review = cursor.fetchone()
 
-    conn.commit()
-    conn.close()
+            if not review:
+                conn.rollback()
+                return {
+                    "success": False,
+                    "message": "Review not found"
+                }
 
-    return {
-        "success": updated > 0,
-        "message": "Review Rejected Successfully"
-    }
+            queue_item_id, status, product_id, prediction_id = review
+
+            if status != "Pending":
+                conn.rollback()
+                return {
+                    "success": False,
+                    "message": f"Review already processed with status: {status}"
+                }
+
+            cursor.execute(
+                """
+                INSERT INTO product_reviews
+                (
+                    product_id,
+                    prediction_id,
+                    reviewer,
+                    decision,
+                    corrected_category,
+                    feedback,
+                    created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                """,
+                (
+                    product_id,
+                    prediction_id,
+                    "admin",
+                    "Rejected",
+                    None,
+                    None,
+                ),
+            )
+
+            cursor.execute(
+                """
+                UPDATE review_queue
+                SET status = 'Rejected'
+                WHERE id = %s
+                """,
+                (item_id,),
+            )
+
+            updated = cursor.rowcount
+
+        conn.commit()
+
+        return {
+            "success": updated > 0,
+            "message": "Review Rejected Successfully"
+        }
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
 
 @app.delete("/review-queue/{review_id}")
 def delete_review(review_id: int):

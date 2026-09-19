@@ -30,39 +30,100 @@ async function loadDashboard() {
 
     const table = document.getElementById("reviewTable");
 
-    table.innerHTML = "";
+    const reviewItems = reviewData.items;
 
-    reviewData.items.forEach(item => {
+    const rowsPerPage = 25;
 
-        table.innerHTML += `
-        <tr>
-            <td>${item.title}</td>
-            <td>${item.category}</td>
-            <td>${item.reason}</td>
-            <td>${(item.confidence*100).toFixed(1)}%</td>
-            <td>${(item.duplicate_score*100).toFixed(1)}%</td>
-            <td>${item.created_at}</td>
-            <td>
-                <button class="btn btn-success btn-sm approveBtn"
-                    data-id="${item.id}">
-                    Approve
-                </button>
+    let currentPage = 1;
 
-                <button class="btn btn-warning btn-sm rejectBtn"
-                    data-id="${item.id}">
-                    Reject
-                </button>
+    function renderReviewTable(page) {
 
-                <button class="btn btn-danger btn-sm deleteBtn"
-                    data-id="${item.id}">
-                    Delete
-                </button>
-            </td>
-        </tr>
-        `;
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
 
-    });
+        const pageItems = reviewItems.slice(start, end);
 
+        const rows = pageItems.map(item => `
+            <tr>
+                <td>${item.title}</td>
+                <td>${item.category}</td>
+                <td>${item.reason}</td>
+                <td>${(item.confidence * 100).toFixed(1)}%</td>
+                <td>${(item.duplicate_score * 100).toFixed(1)}%</td>
+                <td>${item.created_at}</td>
+                <td>
+                    <button class="btn btn-success btn-sm approveBtn"
+                        data-id="${item.id}">
+                        Approve
+                    </button>
+
+                    <button class="btn btn-warning btn-sm rejectBtn"
+                        data-id="${item.id}">
+                        Reject
+                    </button>
+
+                    <button class="btn btn-danger btn-sm deleteBtn"
+                        data-id="${item.id}">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+
+        table.innerHTML = rows;
+
+        renderPagination();
+    }
+
+    function renderPagination() {
+
+        const totalPages =
+            Math.ceil(reviewItems.length / rowsPerPage);
+
+        let pagination =
+            document.getElementById("reviewPagination");
+
+        if (!pagination) {
+
+            pagination = document.createElement("div");
+
+            pagination.id = "reviewPagination";
+
+            pagination.className =
+                "d-flex justify-content-center mt-3";
+
+            table.parentElement.appendChild(pagination);
+        }
+
+        pagination.innerHTML = "";
+
+        for (let page = 1; page <= totalPages; page++) {
+
+            const button =
+                document.createElement("button");
+
+            button.className =
+                `btn btn-sm me-1 ${
+                    page === currentPage
+                        ? "btn-primary"
+                        : "btn-outline-primary"
+                }`;
+
+            button.innerText = page;
+
+            button.onclick = () => {
+
+                currentPage = page;
+
+                renderReviewTable(currentPage);
+
+            };
+
+            pagination.appendChild(button);
+        }
+    }
+
+    renderReviewTable(currentPage);
     //--------------------------------------------------
     // Approve
     //--------------------------------------------------
