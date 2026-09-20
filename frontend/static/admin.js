@@ -45,7 +45,18 @@ async function loadDashboard() {
 
         const rows = pageItems.map(item => `
             <tr>
-                <td>${item.title}</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="http://127.0.0.1:5000/image/${item.image_name}" target="_blank">
+                            <img
+                                src="http://127.0.0.1:5000/image/${item.image_name}"
+                                alt="Product image"
+                                style="width:50px;height:50px;object-fit:cover;border-radius:6px;cursor:pointer;"
+                            >
+                        </a>
+                        <span>${item.title}</span>
+                    </div>
+                </td>
                 <td>${item.category}</td>
                 <td>${item.reason}</td>
                 <td>${(item.confidence * 100).toFixed(1)}%</td>
