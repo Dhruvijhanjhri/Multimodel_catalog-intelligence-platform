@@ -175,11 +175,43 @@ async function loadDashboard() {
 
         const id = e.target.dataset.id;
 
+        const correctedCategory = prompt(
+            "Select corrected category:\n\n1. Electronics_Accessories\n2. Fashion_Travel\n3. Footwear\n4. Furniture\n5. Hardware_HomeImprovement\n6. Home_Kitchen"
+        );
+
+        const categoryMap = {
+            "1": "Electronics_Accessories",
+            "2": "Fashion_Travel",
+            "3": "Footwear",
+            "4": "Furniture",
+            "5": "Hardware_HomeImprovement",
+            "6": "Home_Kitchen"
+        };
+
+        const selectedCategory = categoryMap[correctedCategory];
+
+        if (!selectedCategory) {
+            alert("Invalid category selected.");
+            e.target.disabled = false;
+            e.target.innerHTML = "Reject";
+            return;
+        }
+
+        if (!correctedCategory) {
+            e.target.disabled = false;
+            e.target.innerHTML = "Reject";
+            return;
+        }
+
+        const feedback = prompt(
+            "Enter reviewer feedback (optional):"
+        );
+
         e.target.disabled = true;
         e.target.innerHTML = "Rejecting...";
 
         const response = await fetch(
-            `${API}/review-queue/${id}/reject`,
+            `${API}/review-queue/${id}/reject?corrected_category=${encodeURIComponent(selectedCategory)}&feedback=${encodeURIComponent(feedback || "")}`,
             {
                 method: "PUT"
             }

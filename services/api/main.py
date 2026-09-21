@@ -397,7 +397,11 @@ def approve_review(item_id: int):
 
 
 @app.put("/review-queue/{item_id}/reject")
-def reject_review(item_id: int):
+def reject_review(
+    item_id: int,
+    corrected_category: str | None = None,
+    feedback: str | None = None,
+):
     conn = get_connection()
 
     try:
@@ -456,8 +460,8 @@ def reject_review(item_id: int):
                     prediction_id,
                     "admin",
                     "Rejected",
-                    None,
-                    None,
+                    corrected_category,
+                    feedback,
                 ),
             )
 
