@@ -15,40 +15,65 @@ def add_to_review_queue(
 ):
     conn = get_connection()
 
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            INSERT INTO review_queue
-            (
-                item_id,
-                image_name,
-                title,
-                category,
-                confidence,
-                mismatch_score,
-                duplicate_score,
-                reason,
-                status,
-                created_at
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                item_id,
-                image_name,
-                title,
-                predicted_category,
-                confidence,
-                image_similarity,
-                duplicate_score,
-                reason,
-                "Pending",
-                datetime.now(timezone.utc),
-            ),
-        )
+    try:
+        with conn.cursor() as cursor:
 
-    conn.commit()
-    conn.close()
+            cursor.execute(
+                """
+                SELECT id
+                FROM review_queue
+                WHERE item_id = %s
+                  AND status = 'Pending'
+                LIMIT 1
+                """,
+                (item_id,),
+            )
+
+            existing = cursor.fetchone()
+
+            if existing:
+                conn.rollback()
+                return
+
+            cursor.execute(
+                """
+                INSERT INTO review_queue
+                (
+                    item_id,
+                    image_name,
+                    title,
+                    category,
+                    confidence,
+                    mismatch_score,
+                    duplicate_score,
+                    reason,
+                    status,
+                    created_at
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    item_id,
+                    image_name,
+                    title,
+                    predicted_category,
+                    confidence,
+                    image_similarity,
+                    duplicate_score,
+                    reason,
+                    "Pending",
+                    datetime.now(timezone.utc),
+                ),
+            )
+
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
 
 
 def get_review_queue():

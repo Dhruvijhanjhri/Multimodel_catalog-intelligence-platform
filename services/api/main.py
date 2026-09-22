@@ -194,6 +194,135 @@ async def predict_endpoint(
 
     return result
 
+class SellerProductRequest(BaseModel):
+    title: str
+    brand: str | None = None
+    description: str | None = None
+    image_name: str
+    category: str
+    confidence: float
+    model_version: str | None = None
+
+
+@app.post("/seller/products")
+def create_seller_product(request: SellerProductRequest):
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute(
+                """
+                INSERT INTO products
+                (
+                    item_id,
+                    title,
+                    brand,
+                    category,
+                    source,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (
+                    f"SELLER-{request.image_name}-{request.title[:20]}",
+                    request.title,
+                    request.brand,
+                    request.category,
+                    "seller_portal",
+                ),
+            )
+
+            product_id = cursor.fetchone()[0]
+
+            cursor.execute(
+                """
+                INSERT INTO product_images
+                (
+                    product_id,
+                    image_name,
+                    image_path,
+                    embedding_path,
+                    is_primary,
+                    created_at
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    product_id,
+                    request.image_name,
+                    f"uploads/{request.image_name}",
+                    None,
+                    True,
+                ),
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO product_predictions
+                (
+                    product_id,
+                    predicted_category,
+                    confidence,
+                    model_version,
+                    prediction_source,
+                    created_at
+                )
+                VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    product_id,
+                    request.category,
+                    request.confidence,
+                    request.model_version,
+                    "seller_portal",
+                ),
+            )
+
+        conn.commit()
+
+        return {
+            "success": True,
+            "product_id": product_id,
+            "message": "Seller product saved successfully",
+        }
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
 class DuplicateRequest(BaseModel):
     query: str
     category: str | None = None

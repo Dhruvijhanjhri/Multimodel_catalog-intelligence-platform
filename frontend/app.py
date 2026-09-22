@@ -15,7 +15,15 @@ print(manifest.head(3))
 
 @app.route("/")
 def home():
+    return render_template("home.html")
+
+@app.route("/analyse")
+def analyse():
     return render_template("index.html")
+
+@app.route("/seller")
+def seller():
+    return render_template("seller.html")
 
 @app.post("/get-title")
 def get_title():
@@ -112,6 +120,18 @@ def products(category):
 @app.get("/image/<filename>")
 def get_image(filename):
 
+    # Check seller-uploaded images first
+    seller_image_path = (
+        Path(PROJECT_ROOT)
+        / "uploads"
+        / filename
+    )
+
+    if seller_image_path.exists():
+        print("Serving seller image:", seller_image_path)
+        return send_file(seller_image_path)
+
+    # Fall back to original catalog images
     image_path = (
         Path(PROJECT_ROOT)
         / "data"
@@ -122,7 +142,8 @@ def get_image(filename):
         / filename[:2]
         / filename
     )
-    print("Looking for:", image_path)
+
+    print("Looking for catalog image:", image_path)
     print("Exists:", image_path.exists())
 
     if image_path.exists():
