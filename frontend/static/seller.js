@@ -113,7 +113,7 @@ analyzeBtn.addEventListener("click", async () => {
             await response.json();
         
         latestAIResult = result;
-        latestImageName = image.name;
+        latestImageName = result.image_name;
 
         console.log(
             "Seller AI Result:",

@@ -13,6 +13,7 @@ from deep_translator import GoogleTranslator
 from services.database.review_queue import add_to_review_queue, get_review_queue as get_postgres_review_queue
 from services.database.postgres import get_connection
 from services.database.product_reviews import add_product_review
+import uuid
 
 def translate_to_english(text: str) -> str:
     """
@@ -113,7 +114,7 @@ async def predict_endpoint(
     upload_dir = PROJECT_ROOT / "uploads"
     upload_dir.mkdir(exist_ok=True)
 
-    image_path = upload_dir / image.filename
+    image_path = upload_dir / f"{uuid.uuid4()}_{image.filename}"
 
     with open(image_path, "wb") as f:
         f.write(await image.read())
@@ -176,7 +177,7 @@ async def predict_endpoint(
 
             item_id=image.filename,
 
-            image_name=image.filename,
+            image_name=image_path.name,
 
             title=title,
 
@@ -192,6 +193,7 @@ async def predict_endpoint(
 
         )
 
+    result["image_name"] = image_path.name
     return result
 
 class SellerProductRequest(BaseModel):
@@ -238,7 +240,7 @@ def create_seller_product(request: SellerProductRequest):
                 RETURNING id
                 """,
                 (
-                    f"SELLER-{request.image_name}-{request.title[:20]}",
+                    f"SELLER-{uuid.uuid4()}",
                     request.title,
                     request.brand,
                     request.category,
