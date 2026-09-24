@@ -372,3 +372,89 @@ document.addEventListener("click", async (e) => {
     }
 
 });
+
+async function loadSellerProducts() {
+
+    const loading =
+        document.getElementById("sellerProductsLoading");
+
+    const empty =
+        document.getElementById("sellerProductsEmpty");
+
+    const wrapper =
+        document.getElementById("sellerProductsTableWrapper");
+
+    const tableBody =
+        document.getElementById("sellerProductsTableBody");
+
+    try {
+
+        const response =
+            await fetch(`${FASTAPI_URL}/seller/products`);
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Unable to load seller products."
+            );
+        }
+
+        loading.style.display = "none";
+
+        if (!data.items || data.items.length === 0) {
+            empty.style.display = "block";
+            return;
+        }
+
+        wrapper.style.display = "block";
+
+        tableBody.innerHTML = data.items.map(product => {
+
+            const reviewStatus =
+                product.review_decision || "Not Reviewed";
+
+            return `
+                <tr>
+                    <td title="${product.title || ""}">
+                        ${product.title || "-"}
+                    </td>
+
+                    <td>
+                        ${product.brand || "-"}
+                    </td>
+
+                    <td>
+                        ${product.corrected_category || product.category || "-"}
+                    </td>
+
+                    <td>
+                        ${product.confidence != null
+                            ? `${(product.confidence * 100).toFixed(1)}%`
+                            : "-"}
+                    </td>
+
+                    <td>
+                        ${reviewStatus}
+                    </td>
+                </tr>
+            `;
+
+        }).join("");
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        loading.innerHTML =
+            "Unable to load seller products.";
+
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadSellerProducts();
+});

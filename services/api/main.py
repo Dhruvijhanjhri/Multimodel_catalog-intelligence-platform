@@ -205,6 +205,63 @@ class SellerProductRequest(BaseModel):
     confidence: float
     model_version: str | None = None
 
+@app.get("/seller/products")
+def get_seller_products():
+
+    conn = get_connection()
+
+    try:
+
+        with conn.cursor() as cursor:
+
+            cursor.execute(
+                """
+                SELECT
+                    p.id,
+                    p.item_id,
+                    p.title,
+                    p.brand,
+                    p.category,
+                    pp.confidence,
+                    pp.model_version,
+                    pr.decision,
+                    pr.corrected_category,
+                    pr.feedback
+                FROM products p
+                LEFT JOIN product_predictions pp
+                    ON pp.product_id = p.id
+                LEFT JOIN product_reviews pr
+                    ON pr.product_id = p.id
+                WHERE p.source = 'seller_portal'
+                ORDER BY p.created_at DESC
+                """
+            )
+
+            rows = cursor.fetchall()
+
+            columns = [
+                "product_id",
+                "item_id",
+                "title",
+                "brand",
+                "category",
+                "confidence",
+                "model_version",
+                "review_decision",
+                "corrected_category",
+                "review_feedback",
+            ]
+
+            return {
+                "total_items": len(rows),
+                "items": [
+                    dict(zip(columns, row))
+                    for row in rows
+                ]
+            }
+
+    finally:
+        conn.close()
 
 @app.post("/seller/products")
 def create_seller_product(request: SellerProductRequest):
