@@ -338,6 +338,9 @@ document.addEventListener("click", async (e) => {
                         image_name: latestImageName,
                         category: latestAIResult.category,
                         confidence: latestAIResult.confidence,
+                        image_title_similarity: latestAIResult.image_title_similarity,
+                        mismatch: latestAIResult.mismatch,
+                        duplicate_score: latestAIResult.duplicate_score,
                         model_version: "multimodal_classifier_v1"
                     })
                 }

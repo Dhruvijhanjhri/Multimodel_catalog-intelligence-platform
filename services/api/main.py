@@ -194,6 +194,8 @@ async def predict_endpoint(
         )
 
     result["image_name"] = image_path.name
+    result["duplicate_score"] = duplicate_score
+
     return result
 
 class SellerProductRequest(BaseModel):
@@ -203,6 +205,9 @@ class SellerProductRequest(BaseModel):
     image_name: str
     category: str
     confidence: float
+    image_title_similarity: float
+    mismatch: bool
+    duplicate_score: float
     model_version: str | None = None
 
 @app.get("/seller/products")
@@ -272,6 +277,8 @@ def create_seller_product(request: SellerProductRequest):
 
         with conn.cursor() as cursor:
 
+            seller_item_id = f"SELLER-{uuid.uuid4()}"
+
             cursor.execute(
                 """
                 INSERT INTO products
@@ -297,14 +304,13 @@ def create_seller_product(request: SellerProductRequest):
                 RETURNING id
                 """,
                 (
-                    f"SELLER-{uuid.uuid4()}",
+                    seller_item_id,
                     request.title,
                     request.brand,
                     request.category,
                     "seller_portal",
                 ),
             )
-
             product_id = cursor.fetchone()[0]
 
             cursor.execute(
@@ -366,6 +372,28 @@ def create_seller_product(request: SellerProductRequest):
                     "seller_portal",
                 ),
             )
+        reason = []
+
+        if request.confidence < 0.70:
+            reason.append("Low Confidence")
+
+        if request.mismatch:
+            reason.append("Image-Text Mismatch")
+
+        if request.duplicate_score > 0.90:
+            reason.append("Possible Duplicate")
+
+        if reason:
+            add_to_review_queue(
+                item_id=seller_item_id,
+                image_name=request.image_name,
+                title=request.title,
+                predicted_category=request.category,
+                confidence=request.confidence,
+                image_similarity=request.image_title_similarity,
+                duplicate_score=request.duplicate_score,
+                reason=", ".join(reason),
+            )
 
         conn.commit()
 
@@ -373,6 +401,7 @@ def create_seller_product(request: SellerProductRequest):
             "success": True,
             "product_id": product_id,
             "message": "Seller product saved successfully",
+            "reason": reason
         }
 
     except Exception:
