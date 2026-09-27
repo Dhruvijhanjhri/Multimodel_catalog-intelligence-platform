@@ -429,7 +429,7 @@ async function loadSellerProducts() {
                     </td>
 
                     <td>
-                        ${product.corrected_category || product.category || "-"}
+                        ${product.category || "-"}
                     </td>
 
                     <td>
@@ -461,3 +461,77 @@ async function loadSellerProducts() {
 document.addEventListener("DOMContentLoaded", () => {
     loadSellerProducts();
 });
+
+const bulkAnalyzeBtn = document.getElementById("bulkAnalyzeBtn");
+const bulkCatalogCsv = document.getElementById("bulkCatalogCsv");
+const bulkCatalogImages = document.getElementById("bulkCatalogImages");
+const bulkUploadStatus = document.getElementById("bulkUploadStatus");
+
+if (bulkAnalyzeBtn) {
+    bulkAnalyzeBtn.addEventListener("click", async () => {
+
+        if (!bulkCatalogCsv.files.length) {
+            alert("Please select a catalog CSV file.");
+            return;
+        }
+
+        if (!bulkCatalogImages.files.length) {
+            alert("Please select product images.");
+            return;
+        }
+
+        bulkUploadStatus.style.display = "block";
+        bulkUploadStatus.textContent =
+            "Uploading catalog and images for AI processing...";
+
+        bulkAnalyzeBtn.disabled = true;
+
+        const formData = new FormData();
+
+        formData.append("catalog", bulkCatalogCsv.files[0]);
+
+        for (const image of bulkCatalogImages.files) {
+            formData.append("images", image);
+        }
+
+        try {
+
+            const response = await fetch(
+                `${FASTAPI_URL}/seller/bulk-products`,
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || "Bulk catalog processing failed."
+                );
+            }
+
+            bulkUploadStatus.textContent =
+                `Successfully processed ${result.processed_products} of ${result.total_products} products.`;
+
+            alert("Bulk catalog processing completed successfully.");
+
+            loadSellerProducts();
+
+        } catch (error) {
+
+            console.error("Bulk catalog error:", error);
+
+            bulkUploadStatus.textContent =
+                "Bulk catalog processing failed.";
+
+            alert(error.message);
+
+        } finally {
+
+            bulkAnalyzeBtn.disabled = false;
+
+        }
+    });
+}

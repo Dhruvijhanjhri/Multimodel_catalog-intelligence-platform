@@ -224,7 +224,7 @@
 
         <!-- ADD PRODUCT -->
 
-        <div class="col-lg-4">
+        <div class="col-lg-3">
 
             <div class="action-card">
 
@@ -258,7 +258,7 @@
 
         <!-- MY PRODUCTS -->
 
-        <div class="col-lg-4">
+        <div class="col-lg-3">
 
             <div class="action-card">
 
@@ -291,10 +291,42 @@
 
         </div>
 
+        <!-- BULK CATALOG UPLOAD -->
+
+        <div class="col-lg-3">
+
+            <div class="action-card">
+
+                <div class="action-icon">
+                    📚
+                </div>
+
+                <h4 class="fw-bold">
+                    Bulk Catalog Upload
+                </h4>
+
+                <p class="text-muted">
+
+                    Upload a product CSV and its images
+                    for batch AI catalog processing.
+
+                </p>
+
+                <a
+                    href="#bulkUpload"
+                    class="btn btn-outline-primary">
+
+                    Upload Catalog
+
+                </a>
+
+            </div>
+
+        </div>
 
         <!-- AI INTELLIGENCE -->
 
-        <div class="col-lg-4">
+        <div class="col-lg-3">
 
             <div class="action-card">
 
@@ -391,6 +423,97 @@
     <!-- =================================================
          WORKFLOW
     ================================================= -->
+
+    <!-- =================================================
+        BULK CATALOG UPLOAD
+    ===================================================== -->
+
+    <div
+        id="bulkUpload"
+        class="card border-0 shadow-sm mt-5">
+
+        <div class="card-body p-4">
+
+            <span class="badge bg-primary mb-2">
+                Bulk Product Ingestion
+            </span>
+
+            <h3 class="fw-bold mb-1">
+                Bulk Catalog Upload
+            </h3>
+
+            <p class="text-muted mb-0">
+                Upload a CSV catalog and product images for
+                batch AI-powered catalog analysis.
+            </p>
+
+            <div class="mt-4">
+
+                <label
+                    for="bulkCatalogCsv"
+                    class="form-label fw-bold">
+
+                    Product Catalog CSV
+
+                </label>
+
+                <input
+                    type="file"
+                    id="bulkCatalogCsv"
+                    class="form-control"
+                    accept=".csv">
+
+                <small class="text-muted">
+                    CSV should contain product information and image filenames.
+                </small>
+
+            </div>
+
+            <div class="mt-4">
+
+                <label
+                    for="bulkCatalogImages"
+                    class="form-label fw-bold">
+
+                    Product Images
+
+                </label>
+
+                <input
+                    type="file"
+                    id="bulkCatalogImages"
+                    class="form-control"
+                    accept="image/*"
+                    multiple>
+
+                <small class="text-muted">
+                    Select all product images referenced by the CSV.
+                </small>
+
+            </div>
+
+            <div class="mt-4">
+
+                <button
+                    type="button"
+                    id="bulkAnalyzeBtn"
+                    class="btn btn-primary">
+
+                    Analyze Catalog with AI
+
+                </button>
+
+            </div>
+
+            <div
+                id="bulkUploadStatus"
+                class="mt-4 text-muted"
+                style="display:none;">
+            </div>
+
+        </div>
+
+    </div>
 
     <!-- =================================================
         ADD PRODUCT

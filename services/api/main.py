@@ -15,14 +15,34 @@ from services.database.postgres import get_connection
 from services.database.product_reviews import add_product_review
 import uuid
 
+
 def translate_to_english(text: str) -> str:
     """
-    Translate product title to English.
-    If translation fails, return original text.
+    Translate product title to English when needed.
+    If the text already appears to be English, skip translation.
+    If translation fails, return the original text.
     """
 
     if not text or text.strip() == "":
         return text
+
+    # Skip external translation for titles that are already
+    # composed mainly of English letters, numbers and punctuation.
+    english_characters = sum(
+        1 for char in text
+        if char.isascii() and (char.isalpha() or char.isdigit())
+    )
+
+    total_characters = sum(
+        1 for char in text
+        if not char.isspace()
+    )
+
+    if total_characters > 0:
+        english_ratio = english_characters / total_characters
+
+        if english_ratio >= 0.80:
+            return text
 
     try:
         translated = GoogleTranslator(
@@ -56,6 +76,8 @@ def root():
 # Load model
 # -----------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BULK_UPLOAD_DIR = PROJECT_ROOT / "bulk_uploads"
+BULK_UPLOAD_DIR.mkdir(exist_ok=True)
 
 MODEL_PATH = PROJECT_ROOT / "models" / "baseline" / "tfidf_logreg.pkl"
 
@@ -209,6 +231,152 @@ class SellerProductRequest(BaseModel):
     mismatch: bool
     duplicate_score: float
     model_version: str | None = None
+    item_id: str | None = None
+
+@app.post("/seller/bulk-products")
+async def create_bulk_seller_products(
+    catalog: UploadFile = File(...),
+    images: list[UploadFile] = File(...),
+):
+    batch_id = str(uuid.uuid4())
+    batch_dir = BULK_UPLOAD_DIR / batch_id
+    batch_dir.mkdir(parents=True, exist_ok=True)
+
+    catalog_path = batch_dir / catalog.filename
+
+    with open(catalog_path, "wb") as f:
+        f.write(await catalog.read())
+
+    image_map = {}
+
+    for image in images:
+        image_path = batch_dir / image.filename
+
+        with open(image_path, "wb") as f:
+            f.write(await image.read())
+
+        image_map[image.filename] = image_path
+
+    df = pd.read_csv(catalog_path)
+
+    required_columns = {"product_id", "title", "brand", "image"}
+
+    if not required_columns.issubset(df.columns):
+        return {
+            "success": False,
+            "message": "CSV must contain product_id, title, brand and image columns.",
+        }
+
+    results = []
+
+    for _, row in df.iterrows():
+
+        csv_image_name = str(row["image"])
+
+        if csv_image_name not in image_map:
+            results.append({
+                "product_id": str(row["product_id"]),
+                "success": False,
+                "message": f"Image not provided: {csv_image_name}",
+            })
+            continue
+
+        source_image_path = image_map[csv_image_name]
+
+        translated_title = translate_to_english(str(row["title"]))
+
+        prediction = predict(
+            image_path=str(source_image_path),
+            title=translated_title,
+        )
+
+        duplicate_score = 0.0
+
+        try:
+            with torch.no_grad():
+
+                tokens = clip_tokenizer([translated_title]).to(device)
+
+                features = clip_model.encode_text(tokens)
+
+                features = features / features.norm(dim=-1, keepdim=True)
+
+                query_emb = features.cpu().numpy().astype(np.float32)
+
+            scores, indices = faiss_index.search(query_emb, 1)
+
+            duplicate_score = float(scores[0][0])
+
+        except Exception as e:
+            print("Bulk duplicate check failed:", e)
+
+        stored_image_name = f"{uuid.uuid4()}_{csv_image_name}"
+        stored_image_path = PROJECT_ROOT / "uploads" / stored_image_name
+
+        with open(source_image_path, "rb") as source:
+            with open(stored_image_path, "wb") as destination:
+                destination.write(source.read())
+
+        seller_request = SellerProductRequest(
+            item_id=str(row["product_id"]),
+            title=str(row["title"]),
+            brand=None if pd.isna(row["brand"]) else str(row["brand"]),
+            description=None,
+            image_name=stored_image_name,
+            category=prediction["category"],
+            confidence=prediction["confidence"],
+            image_title_similarity=prediction["image_title_similarity"],
+            mismatch=prediction["mismatch"],
+            duplicate_score=duplicate_score,
+            model_version="multimodal_classifier_v1",
+        )
+
+        existing_product = None
+
+        with get_connection() as check_conn:
+            with check_conn.cursor() as check_cursor:
+                check_cursor.execute(
+                    """
+                    SELECT id
+                    FROM products
+                    WHERE item_id = %s
+                    LIMIT 1
+                    """,
+                    (str(row["product_id"]),),
+                )
+                existing_product = check_cursor.fetchone()
+
+        if existing_product:
+            results.append({
+                "product_id": str(row["product_id"]),
+                "success": True,
+                "skipped": True,
+                "message": "Product already exists. Skipped duplicate ingestion.",
+                "database_product_id": existing_product[0],
+            })
+            continue
+
+        saved = create_seller_product(seller_request)
+
+        results.append({
+            "product_id": str(row["product_id"]),
+            "success": True,
+            "database_product_id": saved["product_id"],
+            "category": prediction["category"],
+            "confidence": prediction["confidence"],
+            "image_title_similarity": prediction["image_title_similarity"],
+            "mismatch": prediction["mismatch"],
+            "duplicate_score": duplicate_score,
+            "review_reason": saved["reason"],
+        })
+
+    return {
+        "success": True,
+        "batch_id": batch_id,
+        "total_products": len(df),
+        "processed_products": len(results),
+        "results": results,
+    }
 
 @app.get("/seller/products")
 def get_seller_products():
@@ -277,7 +445,7 @@ def create_seller_product(request: SellerProductRequest):
 
         with conn.cursor() as cursor:
 
-            seller_item_id = f"SELLER-{uuid.uuid4()}"
+            seller_item_id = request.item_id or f"SELLER-{uuid.uuid4()}"
 
             cursor.execute(
                 """
