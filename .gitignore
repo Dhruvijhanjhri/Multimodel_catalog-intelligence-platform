@@ -97,3 +97,17 @@ embeddings/
 
 # Temporary uploaded test images
 uploads/
+
+# Local bulk upload/test data
+bulk_uploads/
+bulk_test_catalog/
+
+# Local database investigation scripts
+check_schema.py
+check_seller_duplicates.py
+
+# Local ML inspection scripts
+scripts/inspect_classifier_baseline.py
+
+# Local active learning generated data
+data/active_learning/
