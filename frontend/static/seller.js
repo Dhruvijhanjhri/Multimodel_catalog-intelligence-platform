@@ -341,6 +341,8 @@ document.addEventListener("click", async (e) => {
                         image_title_similarity: latestAIResult.image_title_similarity,
                         mismatch: latestAIResult.mismatch,
                         duplicate_score: latestAIResult.duplicate_score,
+                        taxonomy_status: latestAIResult.taxonomy_status,
+                        taxonomy_margin: latestAIResult.taxonomy_margin,
                         model_version: "multimodal_classifier_v1"
                     })
                 }
@@ -405,6 +407,15 @@ async function loadSellerProducts() {
         }
 
         loading.style.display = "none";
+        
+        document.getElementById("myProductsCount").textContent =
+            data.total_items;
+
+        document.getElementById("pendingReviewCount").textContent =
+            data.items.filter(product => !product.review_decision).length;
+
+        document.getElementById("approvedProductsCount").textContent =
+            data.items.filter(product => product.review_decision === "Approved").length;
 
         if (!data.items || data.items.length === 0) {
             empty.style.display = "block";

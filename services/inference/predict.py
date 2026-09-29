@@ -139,7 +139,6 @@ def predict_category(image_path, title):
     }
 
 def predict(image_path, title):
-
     result = predict_category(image_path, title)
 
     similarity = torch.sum(
@@ -149,14 +148,26 @@ def predict(image_path, title):
 
     mismatch = similarity < 0.175
 
-    confidence = float(result["confidence"])
+    confidence = float(
+        result["confidence"]
+    )
 
     return {
         "category": result["category"],
-        "confidence": round(confidence, 4),
-        "image_title_similarity": round(similarity, 4),
+        "confidence": round(
+            confidence,
+            4
+        ),
+        "image_title_similarity": round(
+            similarity,
+            4
+        ),
         "mismatch": mismatch,
-        "probabilities": result["probabilities"].tolist()
+        "probabilities": result["probabilities"].tolist(),
+
+        # Required by taxonomy validation
+        "image_embedding": result["image_embedding"].squeeze(0).cpu().numpy(),
+        "text_embedding": result["text_embedding"].squeeze(0).cpu().numpy()
     }
 
 def image_text_similarity(image_path, title):

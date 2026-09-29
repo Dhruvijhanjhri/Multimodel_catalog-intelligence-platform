@@ -8,6 +8,10 @@ import pandas as pd
 import open_clip
 import torch
 from services.inference.predict import predict
+from services.inference.taxonomy_validator import (
+    validate_taxonomy,
+    determine_taxonomy_status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from deep_translator import GoogleTranslator
 from services.database.review_queue import add_to_review_queue, get_review_queue as get_postgres_review_queue
@@ -153,6 +157,19 @@ async def predict_endpoint(
         title=translated_title
     )
 
+    # ---------- Taxonomy Validation ----------
+    taxonomy_result = validate_taxonomy(
+        image_embedding=result["image_embedding"],
+        text_embedding=result["text_embedding"],
+        predicted_category=result["category"],
+    )
+
+    taxonomy_status = determine_taxonomy_status(
+        confidence=result["confidence"],
+        support_margin=taxonomy_result["support_margin"],
+        mismatch=result["mismatch"],
+    )
+
     # -----------------------------------------
     # Automatic Review Queue Logic
     # -----------------------------------------
@@ -167,6 +184,10 @@ async def predict_endpoint(
     # Image/Text mismatch
     if result["mismatch"]:
         reason.append("Image-Text Mismatch")
+
+    # Taxonomy uncertainty
+    if taxonomy_status == "REVIEW":
+        reason.append("Taxonomy Uncertainty")
 
     # Duplicate detection
     try:
@@ -218,6 +239,21 @@ async def predict_endpoint(
     result["image_name"] = image_path.name
     result["duplicate_score"] = duplicate_score
 
+    # Taxonomy validation results
+    result["taxonomy_status"] = taxonomy_status
+    result["taxonomy_support"] = taxonomy_result["catalog_support"]
+    result["taxonomy_margin"] = taxonomy_result["support_margin"]
+    result["best_alternative_category"] = (
+        taxonomy_result["best_alternative_category"]
+    )
+    result["best_alternative_support"] = (
+        taxonomy_result["best_alternative_support"]
+    )
+
+    # Keep embeddings internal
+    result.pop("image_embedding", None)
+    result.pop("text_embedding", None)
+
     return result
 
 class SellerProductRequest(BaseModel):
@@ -230,6 +266,8 @@ class SellerProductRequest(BaseModel):
     image_title_similarity: float
     mismatch: bool
     duplicate_score: float
+    taxonomy_status: str | None = None
+    taxonomy_margin: float | None = None
     model_version: str | None = None
     item_id: str | None = None
 
@@ -550,6 +588,9 @@ def create_seller_product(request: SellerProductRequest):
 
         if request.duplicate_score > 0.90:
             reason.append("Possible Duplicate")
+        
+        if request.taxonomy_status == "REVIEW":
+            reason.append("Taxonomy Uncertainty")
 
         if reason:
             add_to_review_queue(
