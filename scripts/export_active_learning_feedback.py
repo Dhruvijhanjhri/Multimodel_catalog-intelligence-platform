@@ -130,6 +130,20 @@ training_df["feedback_source"] = training_df["decision"].apply(
 
 training_df["is_human_label"] = True
 
+# Mark whether the reviewed product already existed in the original training split.
+train_items = set(
+    pd.read_parquet(
+        PROJECT_ROOT / "data" / "splits" / "train.parquet"
+    )["item_id"]
+)
+
+training_df["dataset_membership"] = training_df["item_id"].apply(
+    lambda item_id:
+        "original_train"
+        if item_id in train_items
+        else "new_reviewed"
+)
+
 
 # ---------------------------------------------------
 # Save
