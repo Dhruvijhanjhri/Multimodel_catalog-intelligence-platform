@@ -324,6 +324,18 @@ async def create_bulk_seller_products(
             title=translated_title,
         )
 
+        taxonomy_result = validate_taxonomy(
+            prediction["image_embedding"],
+            prediction["text_embedding"],
+            prediction["category"],
+        )
+
+        taxonomy_status = determine_taxonomy_status(
+            confidence=prediction["confidence"],
+            support_margin=taxonomy_result["support_margin"],
+            mismatch=prediction["mismatch"],
+        )
+
         duplicate_score = 0.0
 
         try:
@@ -344,6 +356,16 @@ async def create_bulk_seller_products(
         except Exception as e:
             print("Bulk duplicate check failed:", e)
 
+        decision_result = evaluate_decision(
+            confidence=prediction["confidence"],
+            mismatch=prediction["mismatch"],
+            taxonomy_status=taxonomy_status,
+            duplicate_score=duplicate_score,
+        )
+
+        decision = decision_result["decision"]
+        review_reasons = decision_result["reasons"]
+
         stored_image_name = f"{uuid.uuid4()}_{csv_image_name}"
         stored_image_path = PROJECT_ROOT / "uploads" / stored_image_name
 
@@ -362,6 +384,8 @@ async def create_bulk_seller_products(
             image_title_similarity=prediction["image_title_similarity"],
             mismatch=prediction["mismatch"],
             duplicate_score=duplicate_score,
+            taxonomy_status=taxonomy_status,
+            taxonomy_margin=taxonomy_result["support_margin"],
             model_version="multimodal_classifier_v1",
         )
 
@@ -401,6 +425,10 @@ async def create_bulk_seller_products(
             "image_title_similarity": prediction["image_title_similarity"],
             "mismatch": prediction["mismatch"],
             "duplicate_score": duplicate_score,
+            "decision": decision,
+            "review_reasons": review_reasons,
+            "taxonomy_status": taxonomy_status,
+            "taxonomy_margin": taxonomy_result["support_margin"],
             "review_reason": saved["reason"],
         })
 
@@ -574,19 +602,14 @@ def create_seller_product(request: SellerProductRequest):
                     "seller_portal",
                 ),
             )
-        reason = []
+        decision_result = evaluate_decision(
+            confidence=request.confidence,
+            mismatch=request.mismatch,
+            taxonomy_status=request.taxonomy_status,
+            duplicate_score=request.duplicate_score,
+        )
 
-        if request.confidence < 0.70:
-            reason.append("Low Confidence")
-
-        if request.mismatch:
-            reason.append("Image-Text Mismatch")
-
-        if request.duplicate_score > 0.90:
-            reason.append("Possible Duplicate")
-        
-        if request.taxonomy_status == "REVIEW":
-            reason.append("Taxonomy Uncertainty")
+        reason = decision_result["reasons"]
 
         if reason:
             add_to_review_queue(
