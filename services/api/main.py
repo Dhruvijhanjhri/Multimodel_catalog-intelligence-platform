@@ -18,7 +18,7 @@ from services.database.review_queue import add_to_review_queue, get_review_queue
 from services.database.postgres import get_connection
 from services.database.product_reviews import add_product_review
 import uuid
-
+from services.inference.decision_engine import evaluate_decision
 
 def translate_to_english(text: str) -> str:
     """
@@ -213,12 +213,21 @@ async def predict_endpoint(
 
         print("Duplicate check failed:", e)
 
+    decision_result = evaluate_decision(
+        confidence=result["confidence"],
+        mismatch=result["mismatch"],
+        taxonomy_status=taxonomy_status,
+        duplicate_score=duplicate_score,
+    )
+
+    reason = decision_result["reasons"]
+    
     # Save only if needed
     if reason:
 
         add_to_review_queue(
 
-            item_id=image.filename,
+            item_id=image_path.name,
 
             image_name=image_path.name,
 
