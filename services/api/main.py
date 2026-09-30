@@ -175,19 +175,6 @@ async def predict_endpoint(
     # -----------------------------------------
 
     duplicate_score = 0.0
-    reason = []
-
-    # Low confidence
-    if result["confidence"] < 0.70:
-        reason.append("Low Confidence")
-
-    # Image/Text mismatch
-    if result["mismatch"]:
-        reason.append("Image-Text Mismatch")
-
-    # Taxonomy uncertainty
-    if taxonomy_status == "REVIEW":
-        reason.append("Taxonomy Uncertainty")
 
     # Duplicate detection
     try:
@@ -206,8 +193,6 @@ async def predict_endpoint(
 
         duplicate_score = float(scores[0][0])
 
-        if duplicate_score > 0.90:
-            reason.append("Possible Duplicate")
 
     except Exception as e:
 
@@ -221,6 +206,8 @@ async def predict_endpoint(
     )
 
     reason = decision_result["reasons"]
+    result["decision"] = decision_result["decision"]
+    result["review_reasons"] = reason
     
     # Save only if needed
     if reason:
