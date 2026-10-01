@@ -3,12 +3,16 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
+from services.database.model_registry import get_active_model_version
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 EMBEDDING_DIR = PROJECT_ROOT / "embeddings" / "active_learning"
-MODEL_PATH = PROJECT_ROOT / "models" / "multimodal_classifier.pt"
+
+ACTIVE_MODEL = get_active_model_version("multimodal_classifier")
+MODEL_VERSION = ACTIVE_MODEL["version"]
+MODEL_PATH = PROJECT_ROOT / ACTIVE_MODEL["artifact_path"]
 
 
 IMAGE_EMBEDDINGS_FILE = (

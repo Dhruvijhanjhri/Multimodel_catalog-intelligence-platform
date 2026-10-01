@@ -7,7 +7,7 @@ import faiss
 import pandas as pd
 import open_clip
 import torch
-from services.inference.predict import predict
+from services.inference.predict import predict, MODEL_VERSION
 from services.inference.taxonomy_validator import (
     validate_taxonomy,
     determine_taxonomy_status,
@@ -19,6 +19,7 @@ from services.database.postgres import get_connection
 from services.database.product_reviews import add_product_review
 import uuid
 from services.inference.decision_engine import evaluate_decision
+from services.database.model_registry import get_model_versions
 
 def translate_to_english(text: str) -> str:
     """
@@ -386,7 +387,7 @@ async def create_bulk_seller_products(
             duplicate_score=duplicate_score,
             taxonomy_status=taxonomy_status,
             taxonomy_margin=taxonomy_result["support_margin"],
-            model_version="multimodal_classifier_v1",
+            model_version=MODEL_VERSION,
         )
 
         existing_product = None
@@ -958,6 +959,13 @@ def delete_review(review_id: int):
         "message": "Review deleted"
     }
 
+@app.get("/model-versions")
+def get_model_versions_endpoint():
+    return {
+        "model_name": "multimodal_classifier",
+        "versions": get_model_versions("multimodal_classifier"),
+    }
+
 @app.get("/metrics")
 def get_metrics():
     category_counts = metadata_df["target_category"].value_counts().to_dict()
@@ -1068,7 +1076,7 @@ def get_metrics():
     return {
         "model": {
             "name": "OpenCLIP + Multimodal Classifier",
-            "version": "multimodal_classifier_v1",
+            "version": MODEL_VERSION,
             "test_accuracy": 0.9765,
             "validation_accuracy": 0.9835
         },

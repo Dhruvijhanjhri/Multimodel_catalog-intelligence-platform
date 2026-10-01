@@ -2,11 +2,14 @@ import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics.pairwise import cosine_similarity
+from services.database.model_registry import get_active_model_version
 
 IMAGE_FILE = "embeddings/validation_image_embeddings.npy"
 TEXT_FILE = "embeddings/validation_text_embeddings.npy"
 LABEL_FILE = "embeddings/validation_labels.npy"
-MODEL_FILE = "models/multimodal_classifier.pt"
+ACTIVE_MODEL = get_active_model_version("multimodal_classifier")
+MODEL_VERSION = ACTIVE_MODEL["version"]
+MODEL_FILE = ACTIVE_MODEL["artifact_path"]
 
 TOP_K = 5
 

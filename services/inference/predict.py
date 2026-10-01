@@ -10,7 +10,12 @@ from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-MODEL_PATH = PROJECT_ROOT / "models" / "multimodal_classifier.pt"
+from services.database.model_registry import get_active_model_version
+
+ACTIVE_MODEL = get_active_model_version("multimodal_classifier")
+
+MODEL_VERSION = ACTIVE_MODEL["version"]
+MODEL_PATH = PROJECT_ROOT / ACTIVE_MODEL["artifact_path"]
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -65,6 +70,11 @@ class MultimodalClassifier(torch.nn.Module):
 print("\nLoading Multimodal Classifier...")
 
 classifier = MultimodalClassifier()
+
+if not MODEL_PATH.is_file():
+    raise FileNotFoundError(
+        f"Active model artifact not found: {MODEL_PATH}"
+    )
 
 classifier.load_state_dict(
     torch.load(

@@ -3,12 +3,14 @@ import pandas as pd
 import torch
 
 from services.database.postgres import get_connection
-
+from services.database.model_registry import get_active_model_version
 
 IMAGE_EMBEDDINGS = "embeddings/train_image_embeddings.npy"
 TEXT_EMBEDDINGS = "embeddings/train_text_embeddings.npy"
 METADATA_FILE = "embeddings/embedding_metadata.parquet"
-MODEL_FILE = "models/multimodal_classifier.pt"
+ACTIVE_MODEL = get_active_model_version("multimodal_classifier")
+MODEL_VERSION = ACTIVE_MODEL["version"]
+MODEL_FILE = ACTIVE_MODEL["artifact_path"]
 
 LABELS = [
     "Electronics_Accessories",
@@ -19,7 +21,6 @@ LABELS = [
     "Home_Kitchen",
 ]
 
-MODEL_VERSION = "multimodal_classifier_v1"
 PREDICTION_SOURCE = "saved_embeddings"
 
 

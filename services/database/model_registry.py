@@ -118,3 +118,71 @@ def promote_model_version(model_name, version):
     print(
         f"Model version promoted: {model_name} / {version}"
     )
+
+def get_active_model_version(model_name):
+    conn = get_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT version, artifact_path
+                FROM model_versions
+                WHERE model_name = %s
+                  AND is_active = TRUE
+                """,
+                (model_name,),
+            )
+
+            model = cursor.fetchone()
+
+            if model is None:
+                raise ValueError(
+                    f"No active model version found: {model_name}"
+                )
+
+            return {
+                "version": model[0],
+                "artifact_path": model[1],
+            }
+
+    finally:
+        conn.close()
+
+def get_model_versions(model_name):
+    conn = get_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    version,
+                    model_type,
+                    artifact_path,
+                    metrics,
+                    is_active,
+                    created_at
+                FROM model_versions
+                WHERE model_name = %s
+                ORDER BY created_at DESC
+                """,
+                (model_name,),
+            )
+
+            rows = cursor.fetchall()
+
+            return [
+                {
+                    "version": row[0],
+                    "model_type": row[1],
+                    "artifact_path": row[2],
+                    "metrics": row[3],
+                    "is_active": row[4],
+                    "created_at": row[5],
+                }
+                for row in rows
+            ]
+
+    finally:
+        conn.close()
