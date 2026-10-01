@@ -962,10 +962,113 @@ def delete_review(review_id: int):
 def get_metrics():
     category_counts = metadata_df["target_category"].value_counts().to_dict()
 
+    conn = get_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_predictions,
+                    AVG(confidence) AS average_confidence,
+                    COUNT(*) FILTER (WHERE confidence < 0.70)
+                        AS low_confidence_predictions
+                FROM product_predictions
+                """
+            )
+
+            prediction_stats = cursor.fetchone()
+
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_reviews,
+                    COUNT(*) FILTER (WHERE decision = 'Approved')
+                        AS approved_reviews,
+                    COUNT(*) FILTER (WHERE decision = 'Rejected')
+                        AS rejected_reviews,
+                    COUNT(*) FILTER (
+                        WHERE decision = 'Rejected'
+                        AND corrected_category IS NOT NULL
+                    ) AS corrected_reviews
+                FROM product_reviews
+                """
+            )
+
+            review_stats = cursor.fetchone()
+
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_queue_items,
+                    COUNT(*) FILTER (WHERE status = 'Pending')
+                        AS pending_reviews
+                FROM review_queue
+                """
+            )
+
+            queue_stats = cursor.fetchone()
+            total_review_queue_items = int(queue_stats[0] or 0)
+            pending_reviews = int(queue_stats[1] or 0)
+            processed_reviews = total_review_queue_items - pending_reviews
+
+            cursor.execute(
+                """
+                SELECT
+                    model_version,
+                    COUNT(*) AS total_predictions
+                FROM product_predictions
+                GROUP BY model_version
+                ORDER BY total_predictions DESC
+                """
+            )
+
+            model_version_rows = cursor.fetchall()
+
+    finally:
+        conn.close()
+
+    total_predictions = int(prediction_stats[0] or 0)
+    average_confidence = float(prediction_stats[1] or 0)
+    low_confidence_predictions = int(prediction_stats[2] or 0)
+    total_reviews = int(review_stats[0] or 0)
+    approved_reviews = int(review_stats[1] or 0)
+    rejected_reviews = int(review_stats[2] or 0)
+    corrected_reviews = int(review_stats[3] or 0)
+
+    approval_rate = (
+        approved_reviews / total_reviews
+        if total_reviews
+        else 0
+    )
+
+    correction_rate = (
+        corrected_reviews / rejected_reviews
+        if rejected_reviews
+        else 0
+    )
+    
+    review_queue_processing_rate = (
+        processed_reviews / total_review_queue_items
+        if total_review_queue_items
+        else 0
+    )
+
+    low_confidence_rate = (
+        low_confidence_predictions / total_predictions
+        if total_predictions
+        else 0
+    )
+
+    predictions_by_model_version = {
+        row[0]: int(row[1])
+        for row in model_version_rows
+    }
+
     return {
         "model": {
             "name": "OpenCLIP + Multimodal Classifier",
-            "version": "2.0.0",
+            "version": "multimodal_classifier_v1",
             "test_accuracy": 0.9765,
             "validation_accuracy": 0.9835
         },
@@ -977,6 +1080,27 @@ def get_metrics():
         "dataset": {
             "total_products": int(len(metadata_df)),
             "categories": category_counts
+        },
+        "prediction_monitoring": {
+            "total_predictions": total_predictions,
+            "average_confidence": average_confidence,
+            "low_confidence_predictions": low_confidence_predictions,
+            "low_confidence_rate": low_confidence_rate,
+            "predictions_by_model_version": predictions_by_model_version
+        },
+        "feedback_monitoring": {
+            "total_reviews": total_reviews,
+            "approved_reviews": approved_reviews,
+            "rejected_reviews": rejected_reviews,
+            "corrected_reviews": corrected_reviews,
+            "approval_rate": approval_rate,
+            "correction_rate": correction_rate
+        },
+        "review_queue_monitoring": {
+            "pending_reviews": pending_reviews,
+            "processed_reviews": processed_reviews,
+            "total_queue_items": total_review_queue_items,
+            "processing_rate": review_queue_processing_rate
         },
         "thresholds": {
             "duplicate_threshold": 0.90,
