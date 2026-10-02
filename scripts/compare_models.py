@@ -1,19 +1,20 @@
+import sys
 from pathlib import Path
-
-from evaluate_model import evaluate_model
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-ACTIVE_MODEL = (
-    PROJECT_ROOT
-    / "models"
-    / "multimodal_classifier.pt"
-)
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from evaluate_model import evaluate_model
+from services.database.model_registry import get_active_model_version
+
+ACTIVE_MODEL = get_active_model_version("multimodal_classifier")
+ACTIVE_MODEL_PATH = PROJECT_ROOT / ACTIVE_MODEL["artifact_path"]
 
 
 def compare_models(candidate_path):
 
-    active_results = evaluate_model(ACTIVE_MODEL)
+    active_results = evaluate_model(ACTIVE_MODEL_PATH)
     candidate_results = evaluate_model(candidate_path)
 
     active_validation = active_results["validation"]["accuracy"]
