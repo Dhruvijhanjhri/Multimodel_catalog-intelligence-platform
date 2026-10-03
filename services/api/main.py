@@ -302,11 +302,47 @@ async def create_bulk_seller_products(
             "message": "CSV must contain product_id, title, brand and image columns.",
         }
 
+    product_ids = df["product_id"].dropna().astype(str).str.strip()
+
+    if product_ids.duplicated().any():
+        return {
+            "success": False,
+            "message": "CSV contains duplicate product_id values.",
+        }
+
     results = []
 
     for _, row in df.iterrows():
 
-        csv_image_name = str(row["image"])
+        product_id = str(row["product_id"]).strip()
+
+        if not product_id or product_id.lower() == "nan":
+            results.append({
+                "product_id": None,
+                "success": False,
+                "message": "Product ID is required.",
+            })
+            continue
+
+        csv_image_name = str(row["image"]).strip()
+
+        title = str(row["title"]).strip()
+
+        if not title or title.lower() == "nan":
+            results.append({
+                "product_id": product_id,
+                "success": False,
+                "message": "Product title is required.",
+            })
+            continue
+
+        if not csv_image_name or csv_image_name.lower() == "nan":
+            results.append({
+                "product_id": product_id,
+                "success": False,
+                "message": "Image filename is required.",
+            })
+            continue
 
         if csv_image_name not in image_map:
             results.append({
@@ -318,8 +354,7 @@ async def create_bulk_seller_products(
 
         source_image_path = image_map[csv_image_name]
 
-        translated_title = translate_to_english(str(row["title"]))
-
+        translated_title = translate_to_english(title)
         prediction = predict(
             image_path=str(source_image_path),
             title=translated_title,
