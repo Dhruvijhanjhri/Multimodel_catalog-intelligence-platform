@@ -71,6 +71,44 @@ def train_candidate():
     print("-" * 50)
 
     X_train, y_train = load_split("train")
+
+    active_image_embeddings = np.load(
+        EMBEDDING_DIR / "active_learning" / "active_learning_image_embeddings.npy"
+    )
+
+    active_text_embeddings = np.load(
+        EMBEDDING_DIR / "active_learning" / "active_learning_text_embeddings.npy"
+    )
+
+    active_labels = np.load(
+        EMBEDDING_DIR / "active_learning" / "active_learning_labels.npy"
+    )
+
+    active_features = np.concatenate(
+        [active_image_embeddings, active_text_embeddings],
+        axis=1
+    )
+
+    X_active = torch.tensor(
+        active_features,
+        dtype=torch.float32
+    )
+
+    y_active = torch.tensor(
+        active_labels,
+        dtype=torch.long
+    )
+
+    X_train = torch.cat(
+        [X_train, X_active],
+        dim=0
+    )
+
+    y_train = torch.cat(
+        [y_train, y_active],
+        dim=0
+    )
+
     X_val, y_val = load_split("validation")
 
     train_loader = DataLoader(
@@ -101,8 +139,10 @@ def train_candidate():
     epochs = 15
     best_accuracy = 0.0
 
+    candidate_version = "multimodal_classifier_candidate_20261007"
+
     candidate_path = (
-        CANDIDATE_DIR / "multimodal_classifier_candidate.pt"
+        CANDIDATE_DIR / f"{candidate_version}.pt"
     )
 
     start = time.time()

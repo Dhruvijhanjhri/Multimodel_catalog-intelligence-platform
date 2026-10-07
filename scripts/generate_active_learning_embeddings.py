@@ -27,6 +27,7 @@ if not INPUT_FILE.exists():
 
 
 df = pd.read_parquet(INPUT_FILE)
+df = df[df["dataset_membership"] == "new_reviewed"].copy()
 
 
 print()
