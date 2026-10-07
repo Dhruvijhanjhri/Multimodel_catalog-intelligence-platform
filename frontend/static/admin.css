@@ -10,7 +10,7 @@ body{
 
     border-radius:12px;
 
-    padding:25px;
+    padding:10px 16px;
 
     box-shadow:0 3px 10px rgba(0,0,0,.08);
 
@@ -52,7 +52,7 @@ table td{
 
 .table th:nth-child(1),
 .table td:nth-child(1) {
-    width: 30%;
+    width: 25%;
 }
 
 .table th:nth-child(2),
@@ -93,3 +93,33 @@ table td{
 #reviewPagination button {
     margin-right: 0 !important;
 }
+
+/* Ingestion History table */
+.table:has(#ingestionHistoryTable) {
+    table-layout: fixed;
+}
+
+.table:has(#ingestionHistoryTable) th:nth-child(1),
+.table:has(#ingestionHistoryTable) td:nth-child(1) { width: 25%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(2),
+.table:has(#ingestionHistoryTable) td:nth-child(2) { width: 10%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(3),
+.table:has(#ingestionHistoryTable) td:nth-child(3) { width: 10%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(4),
+.table:has(#ingestionHistoryTable) td:nth-child(4) { width: 8%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(5),
+.table:has(#ingestionHistoryTable) td:nth-child(5) { width: 10%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(6),
+.table:has(#ingestionHistoryTable) td:nth-child(6) { width: 8%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(7),
+.table:has(#ingestionHistoryTable) td:nth-child(7) { width: 8%; }
+
+.table:has(#ingestionHistoryTable) th:nth-child(8),
+.table:has(#ingestionHistoryTable) td:nth-child(8) { width: 21%; }
+

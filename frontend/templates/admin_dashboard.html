@@ -60,6 +60,153 @@
 
     </div>
 
+    <!-- ML Monitoring -->
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Live Predictions</h6>
+                <h3 id="livePredictions">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Average Confidence</h6>
+                <h3 id="averageConfidence">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Low Confidence Rate</h6>
+                <h3 id="lowConfidenceRate">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Active Model</h6>
+                <h3 id="activeModel" style="font-size: 1rem;">--</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Human Feedback Monitoring -->
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h6>Human Reviews</h6>
+                <h3 id="humanReviews">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h6>Approval Rate</h6>
+                <h3 id="approvalRate">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="metric-card">
+                <h6>Correction Rate</h6>
+                <h3 id="correctionRate">--</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Review Queue Monitoring -->
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-6">
+            <div class="metric-card">
+                <h6>Pending Reviews</h6>
+                <h3 id="pendingReviews">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="metric-card">
+                <h6>Queue Processing Rate</h6>
+                <h3 id="queueProcessingRate">--</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Ingestion Monitoring -->
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Total Ingestion Events</h6>
+                <h3 id="totalIngestionEvents">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Processed</h6>
+                <h3 id="processedIngestionEvents">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Failed</h6>
+                <h3 id="failedIngestionEvents">--</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="metric-card">
+                <h6>Failure Rate</h6>
+                <h3 id="ingestionFailureRate">--</h3>
+            </div>
+        </div>
+
+    </div>
+    <!-- Ingestion History -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header fw-bold">
+            Ingestion History
+        </div>
+
+        <div class="card-body">
+
+            <table class="table table-hover">
+
+                <thead>
+                <tr>
+                    <th>Batch / Event</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Successful</th>
+                    <th>Failed</th>
+                    <th>Skipped</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
+
+                <tbody id="ingestionHistoryTable">
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
     <!-- Review Queue -->
 
     <div class="card shadow-sm">
@@ -268,3 +415,4 @@
 </body>
 
 </html>
+

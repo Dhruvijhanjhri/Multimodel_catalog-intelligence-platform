@@ -1,4 +1,4 @@
-const API = "http://127.0.0.1:8000";
+const API = "http://127.0.0.1:8001";
 
 async function loadDashboard() {
 
@@ -19,6 +19,111 @@ async function loadDashboard() {
         (metricsData.model.test_accuracy * 100).toFixed(2) + "%";
 
     //-----------------------------------
+    // ML Monitoring
+    //-----------------------------------
+
+    const monitoring =
+        metricsData.prediction_monitoring;
+
+    document.getElementById("livePredictions").innerText =
+        monitoring.total_predictions.toLocaleString();
+
+    document.getElementById("averageConfidence").innerText =
+        (monitoring.average_confidence * 100).toFixed(2) + "%";
+
+    document.getElementById("lowConfidenceRate").innerText =
+        (monitoring.low_confidence_rate * 100).toFixed(2) + "%";
+
+    const modelVersions =
+        Object.keys(monitoring.predictions_by_model_version);
+
+    document.getElementById("activeModel").innerText =
+        modelVersions.length > 0
+            ? modelVersions[0]
+            : "N/A";
+
+    //-----------------------------------
+    // Human Feedback Monitoring
+    //-----------------------------------
+
+    const feedback =
+        metricsData.feedback_monitoring;
+
+    document.getElementById("humanReviews").innerText =
+        feedback.total_reviews.toLocaleString();
+
+    document.getElementById("approvalRate").innerText =
+        (feedback.approval_rate * 100).toFixed(2) + "%";
+
+    document.getElementById("correctionRate").innerText =
+        (feedback.correction_rate * 100).toFixed(2) + "%";
+
+    //-----------------------------------
+    // Ingestion Monitoring
+    //-----------------------------------
+
+    const ingestion =
+        metricsData.ingestion_monitoring;
+
+    document.getElementById("totalIngestionEvents").innerText =
+        ingestion.total_events.toLocaleString();
+
+    document.getElementById("processedIngestionEvents").innerText =
+        ingestion.processed_events.toLocaleString();
+
+    document.getElementById("failedIngestionEvents").innerText =
+        ingestion.failed_events.toLocaleString();
+
+    document.getElementById("ingestionFailureRate").innerText =
+        (ingestion.failure_rate * 100).toFixed(2) + "%";
+
+    //-----------------------------------
+    // Review Queue Monitoring
+    //-----------------------------------
+
+    const queueMonitoring =
+        metricsData.review_queue_monitoring;
+
+    document.getElementById("pendingReviews").innerText =
+        queueMonitoring.pending_reviews.toLocaleString();
+
+    document.getElementById("queueProcessingRate").innerText =
+        (queueMonitoring.processing_rate * 100).toFixed(2) + "%";
+
+
+    //-----------------------------------
+    //-----------------------------------
+    // Ingestion History
+    //-----------------------------------
+
+    const ingestionEvents =
+        await fetch(`${API}/ingestion-events`);
+
+    const ingestionData =
+        await ingestionEvents.json();
+
+    const ingestionTable =
+        document.getElementById("ingestionHistoryTable");
+
+    ingestionTable.innerHTML =
+        ingestionData.events.map(event => {
+
+            const payload = event.payload || {};
+
+            return `
+                <tr>
+                    <td>${payload.batch_id || event.event_id}</td>
+                    <td>${event.event_type || "--"}</td>
+                    <td>${event.status || "--"}</td>
+                    <td>${payload.total_products ?? "--"}</td>
+                    <td>${payload.successful_rows ?? "--"}</td>
+                    <td>${payload.failed_rows ?? "--"}</td>
+                    <td>${payload.skipped_rows ?? "--"}</td>
+                    <td>${event.created_at ? new Date(event.created_at).toLocaleString() : "--"}</td>
+                </tr>
+            `;
+        }).join("");
+
     // Review Queue
     //-----------------------------------
 
@@ -309,6 +414,8 @@ async function loadCharts() {
     );
 
     //------------------------------------------------
+
+    //-----------------------------------
     // Review Queue Chart
     //------------------------------------------------
 
@@ -370,3 +477,7 @@ async function loadCharts() {
 }
 
 loadCharts();
+
+
+
+

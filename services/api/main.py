@@ -17,6 +17,10 @@ from deep_translator import GoogleTranslator
 from services.database.review_queue import add_to_review_queue, get_review_queue as get_postgres_review_queue
 from services.database.postgres import get_connection
 from services.database.product_reviews import add_product_review
+from services.database.ingestion_events import (
+    create_ingestion_event,
+    update_ingestion_event,
+)
 import uuid
 from services.inference.decision_engine import evaluate_decision
 from services.database.model_registry import get_model_versions
@@ -274,207 +278,372 @@ async def create_bulk_seller_products(
     images: list[UploadFile] = File(...),
 ):
     batch_id = str(uuid.uuid4())
-    batch_dir = BULK_UPLOAD_DIR / batch_id
-    batch_dir.mkdir(parents=True, exist_ok=True)
+    event_id = create_ingestion_event(
+        source="seller_portal",
+        event_type="BULK_UPLOAD",
+        payload={
+            "batch_id": batch_id,
+            "catalog_filename": catalog.filename,
+            "image_count": len(images),
+        },
+    )
+    try:
+        batch_dir = BULK_UPLOAD_DIR / batch_id
+        batch_dir.mkdir(parents=True, exist_ok=True)
 
-    catalog_path = batch_dir / catalog.filename
+        catalog_path = batch_dir / catalog.filename
 
-    with open(catalog_path, "wb") as f:
-        f.write(await catalog.read())
+        with open(catalog_path, "wb") as f:
+            f.write(await catalog.read())
 
-    image_map = {}
+        image_map = {}
 
-    for image in images:
-        image_path = batch_dir / image.filename
+        for image in images:
+            image_path = batch_dir / image.filename
 
-        with open(image_path, "wb") as f:
-            f.write(await image.read())
+            with open(image_path, "wb") as f:
+                f.write(await image.read())
 
-        image_map[image.filename] = image_path
-
-    df = pd.read_csv(catalog_path)
-
-    required_columns = {"product_id", "title", "brand", "image"}
-
-    if not required_columns.issubset(df.columns):
-        return {
-            "success": False,
-            "message": "CSV must contain product_id, title, brand and image columns.",
-        }
-
-    product_ids = df["product_id"].dropna().astype(str).str.strip()
-
-    if product_ids.duplicated().any():
-        return {
-            "success": False,
-            "message": "CSV contains duplicate product_id values.",
-        }
-
-    results = []
-
-    for _, row in df.iterrows():
-
-        product_id = str(row["product_id"]).strip()
-
-        if not product_id or product_id.lower() == "nan":
-            results.append({
-                "product_id": None,
-                "success": False,
-                "message": "Product ID is required.",
-            })
-            continue
-
-        csv_image_name = str(row["image"]).strip()
-
-        title = str(row["title"]).strip()
-
-        if not title or title.lower() == "nan":
-            results.append({
-                "product_id": product_id,
-                "success": False,
-                "message": "Product title is required.",
-            })
-            continue
-
-        if not csv_image_name or csv_image_name.lower() == "nan":
-            results.append({
-                "product_id": product_id,
-                "success": False,
-                "message": "Image filename is required.",
-            })
-            continue
-
-        if csv_image_name not in image_map:
-            results.append({
-                "product_id": str(row["product_id"]),
-                "success": False,
-                "message": f"Image not provided: {csv_image_name}",
-            })
-            continue
-
-        source_image_path = image_map[csv_image_name]
-
-        translated_title = translate_to_english(title)
-        prediction = predict(
-            image_path=str(source_image_path),
-            title=translated_title,
-        )
-
-        taxonomy_result = validate_taxonomy(
-            prediction["image_embedding"],
-            prediction["text_embedding"],
-            prediction["category"],
-        )
-
-        taxonomy_status = determine_taxonomy_status(
-            confidence=prediction["confidence"],
-            support_margin=taxonomy_result["support_margin"],
-            mismatch=prediction["mismatch"],
-        )
-
-        duplicate_score = 0.0
+            image_map[image.filename] = image_path
 
         try:
-            with torch.no_grad():
-
-                tokens = clip_tokenizer([translated_title]).to(device)
-
-                features = clip_model.encode_text(tokens)
-
-                features = features / features.norm(dim=-1, keepdim=True)
-
-                query_emb = features.cpu().numpy().astype(np.float32)
-
-            scores, indices = faiss_index.search(query_emb, 1)
-
-            duplicate_score = float(scores[0][0])
-
+            df = pd.read_csv(catalog_path)
         except Exception as e:
-            print("Bulk duplicate check failed:", e)
+            error_message = f"Failed to read CSV: {str(e)}"
 
-        decision_result = evaluate_decision(
-            confidence=prediction["confidence"],
-            mismatch=prediction["mismatch"],
-            taxonomy_status=taxonomy_status,
-            duplicate_score=duplicate_score,
-        )
+            update_ingestion_event(
+                event_id=event_id,
+                status="Failed",
+                error_message=error_message,
+                payload={
+                    "batch_id": batch_id,
+                    "status": "Failed",
+                },
+            )
 
-        decision = decision_result["decision"]
-        review_reasons = decision_result["reasons"]
+            return {
+                "success": False,
+                "message": error_message,
+            }
 
-        stored_image_name = f"{uuid.uuid4()}_{csv_image_name}"
-        stored_image_path = PROJECT_ROOT / "uploads" / stored_image_name
+        required_columns = {"product_id", "title", "brand", "image"}
 
-        with open(source_image_path, "rb") as source:
-            with open(stored_image_path, "wb") as destination:
-                destination.write(source.read())
+        if not required_columns.issubset(df.columns):
+            error_message = (
+                "CSV must contain product_id, title, brand and image columns."
+            )
 
-        seller_request = SellerProductRequest(
-            item_id=str(row["product_id"]),
-            title=str(row["title"]),
-            brand=None if pd.isna(row["brand"]) else str(row["brand"]),
-            description=None,
-            image_name=stored_image_name,
-            category=prediction["category"],
-            confidence=prediction["confidence"],
-            image_title_similarity=prediction["image_title_similarity"],
-            mismatch=prediction["mismatch"],
-            duplicate_score=duplicate_score,
-            taxonomy_status=taxonomy_status,
-            taxonomy_margin=taxonomy_result["support_margin"],
-            model_version=MODEL_VERSION,
-        )
+            update_ingestion_event(
+                event_id=event_id,
+                status="Failed",
+                error_message=error_message,
+                payload={
+                    "batch_id": batch_id,
+                    "status": "Failed",
+                },
+            )
 
-        existing_product = None
+            return {
+                "success": False,
+                "message": error_message,
+            }
 
-        with get_connection() as check_conn:
-            with check_conn.cursor() as check_cursor:
-                check_cursor.execute(
-                    """
-                    SELECT id
-                    FROM products
-                    WHERE item_id = %s
-                    LIMIT 1
-                    """,
-                    (str(row["product_id"]),),
-                )
-                existing_product = check_cursor.fetchone()
+        product_ids = df["product_id"].dropna().astype(str).str.strip()
 
-        if existing_product:
+        if product_ids.duplicated().any():
+            error_message = "CSV contains duplicate product_id values."
+
+            update_ingestion_event(
+                event_id=event_id,
+                status="Failed",
+                error_message=error_message,
+                payload={
+                    "batch_id": batch_id,
+                    "status": "Failed",
+                },
+            )
+
+            return {
+                "success": False,
+                "message": error_message,
+            }
+
+        results = []
+
+        successful_rows = 0
+        failed_rows = 0
+        skipped_rows = 0
+
+        for _, row in df.iterrows():
+
+            product_id = str(row["product_id"]).strip()
+
+            if not product_id or product_id.lower() == "nan":
+                failed_rows += 1
+
+                results.append({
+                    "product_id": None,
+                    "success": False,
+                    "message": "Product ID is required.",
+                })
+                continue
+
+            csv_image_name = str(row["image"]).strip()
+
+            title = str(row["title"]).strip()
+
+            if not title or title.lower() == "nan":
+                failed_rows += 1
+
+                results.append({
+                    "product_id": product_id,
+                    "success": False,
+                    "message": "Product title is required.",
+                })
+                continue
+
+            if not csv_image_name or csv_image_name.lower() == "nan":
+                failed_rows += 1
+            
+                results.append({
+                    "product_id": product_id,
+                    "success": False,
+                    "message": "Image filename is required.",
+                })
+                continue
+
+            if csv_image_name not in image_map:
+                failed_rows += 1
+
+                results.append({
+                    "product_id": str(row["product_id"]),
+                    "success": False,
+                    "message": f"Image not provided: {csv_image_name}",
+                })
+                continue
+
+            source_image_path = image_map[csv_image_name]
+
+            translated_title = translate_to_english(title)
+            prediction = predict(
+                image_path=str(source_image_path),
+                title=translated_title,
+            )
+
+            taxonomy_result = validate_taxonomy(
+                prediction["image_embedding"],
+                prediction["text_embedding"],
+                prediction["category"],
+            )
+
+            taxonomy_status = determine_taxonomy_status(
+                confidence=prediction["confidence"],
+                support_margin=taxonomy_result["support_margin"],
+                mismatch=prediction["mismatch"],
+            )
+
+            duplicate_score = 0.0
+
+            try:
+                with torch.no_grad():
+
+                    tokens = clip_tokenizer([translated_title]).to(device)
+
+                    features = clip_model.encode_text(tokens)
+
+                    features = features / features.norm(dim=-1, keepdim=True)
+
+                    query_emb = features.cpu().numpy().astype(np.float32)
+
+                scores, indices = faiss_index.search(query_emb, 1)
+
+                duplicate_score = float(scores[0][0])
+
+            except Exception as e:
+                print("Bulk duplicate check failed:", e)
+
+            decision_result = evaluate_decision(
+                confidence=prediction["confidence"],
+                mismatch=prediction["mismatch"],
+                taxonomy_status=taxonomy_status,
+                duplicate_score=duplicate_score,
+            )
+
+            decision = decision_result["decision"]
+            review_reasons = decision_result["reasons"]
+
+            stored_image_name = f"{uuid.uuid4()}_{csv_image_name}"
+            stored_image_path = PROJECT_ROOT / "uploads" / stored_image_name
+
+            with open(source_image_path, "rb") as source:
+                with open(stored_image_path, "wb") as destination:
+                    destination.write(source.read())
+
+            seller_request = SellerProductRequest(
+                item_id=str(row["product_id"]),
+                title=str(row["title"]),
+                brand=None if pd.isna(row["brand"]) else str(row["brand"]),
+                description=None,
+                image_name=stored_image_name,
+                category=prediction["category"],
+                confidence=prediction["confidence"],
+                image_title_similarity=prediction["image_title_similarity"],
+                mismatch=prediction["mismatch"],
+                duplicate_score=duplicate_score,
+                taxonomy_status=taxonomy_status,
+                taxonomy_margin=taxonomy_result["support_margin"],
+                model_version=MODEL_VERSION,
+            )
+
+            existing_product = None
+
+            with get_connection() as check_conn:
+                with check_conn.cursor() as check_cursor:
+                    check_cursor.execute(
+                        """
+                        SELECT id
+                        FROM products
+                        WHERE item_id = %s
+                        LIMIT 1
+                        """,
+                        (str(row["product_id"]),),
+                    )
+                    existing_product = check_cursor.fetchone()
+
+            if existing_product:
+                skipped_rows += 1
+                results.append({
+                    "product_id": str(row["product_id"]),
+                    "success": True,
+                    "skipped": True,
+                    "message": "Product already exists. Skipped duplicate ingestion.",
+                    "database_product_id": existing_product[0],
+                })
+                continue
+
+            try:
+                saved = create_seller_product(seller_request)
+            except Exception as e:
+                failed_rows += 1
+
+                results.append({
+                    "product_id": str(row["product_id"]),
+                    "success": False,
+                    "message": f"Product ingestion failed: {str(e)}",
+                })
+                continue
+
+            successful_rows += 1
+
             results.append({
                 "product_id": str(row["product_id"]),
                 "success": True,
-                "skipped": True,
-                "message": "Product already exists. Skipped duplicate ingestion.",
-                "database_product_id": existing_product[0],
+                "database_product_id": saved["product_id"],
+                "category": prediction["category"],
+                "confidence": prediction["confidence"],
+                "image_title_similarity": prediction["image_title_similarity"],
+                "mismatch": prediction["mismatch"],
+                "duplicate_score": duplicate_score,
+                "decision": decision,
+                "review_reasons": review_reasons,
+                "taxonomy_status": taxonomy_status,
+                "taxonomy_margin": taxonomy_result["support_margin"],
+                "review_reason": saved["reason"],
             })
-            continue
 
-        saved = create_seller_product(seller_request)
+        update_ingestion_event(
+            event_id=event_id,
+            status="Processed",
+            payload={
+                "batch_id": batch_id,
+                "total_products": len(df),
+                "successful_rows": successful_rows,
+                "failed_rows": failed_rows,
+                "skipped_rows": skipped_rows,
+                "status": "Processed",
+            },
+        )
 
-        results.append({
-            "product_id": str(row["product_id"]),
+        return {
             "success": True,
-            "database_product_id": saved["product_id"],
-            "category": prediction["category"],
-            "confidence": prediction["confidence"],
-            "image_title_similarity": prediction["image_title_similarity"],
-            "mismatch": prediction["mismatch"],
-            "duplicate_score": duplicate_score,
-            "decision": decision,
-            "review_reasons": review_reasons,
-            "taxonomy_status": taxonomy_status,
-            "taxonomy_margin": taxonomy_result["support_margin"],
-            "review_reason": saved["reason"],
-        })
+            "batch_id": batch_id,
+            "total_products": len(df),
+            "processed_products": len(results),
+            "successful_rows": successful_rows,
+            "failed_rows": failed_rows,
+            "skipped_rows": skipped_rows,
+            "results": results,
+        }
+    except Exception as e:
+        error_message = f"Bulk ingestion failed: {str(e)}"
 
-    return {
-        "success": True,
-        "batch_id": batch_id,
-        "total_products": len(df),
-        "processed_products": len(results),
-        "results": results,
-    }
+        try:
+            update_ingestion_event(
+                event_id=event_id,
+                status="Failed",
+                error_message=error_message,
+                payload={
+                    "batch_id": batch_id,
+                    "status": "Failed",
+                },
+            )
+        except Exception as update_error:
+            print("Failed to update ingestion event:", update_error)
+
+        return {
+            "success": False,
+            "batch_id": batch_id,
+            "message": error_message,
+        }
+
+@app.get("/ingestion-events")
+def get_ingestion_events():
+    conn = get_connection()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    event_id,
+                    item_id,
+                    source,
+                    event_type,
+                    payload,
+                    status,
+                    error_message,
+                    created_at,
+                    processed_at
+                FROM ingestion_events
+                ORDER BY created_at DESC
+                LIMIT 100
+                """
+            )
+
+            rows = cursor.fetchall()
+
+            columns = [
+                "event_id",
+                "item_id",
+                "source",
+                "event_type",
+                "payload",
+                "status",
+                "error_message",
+                "created_at",
+                "processed_at",
+            ]
+
+            return {
+                "total_events": len(rows),
+                "events": [
+                    dict(zip(columns, row))
+                    for row in rows
+                ],
+            }
+
+    finally:
+        conn.close()
 
 @app.get("/seller/products")
 def get_seller_products():
@@ -1058,6 +1227,18 @@ def get_metrics():
             cursor.execute(
                 """
                 SELECT
+                    COUNT(*) AS total_events,
+                    COUNT(*) FILTER (WHERE status = 'Processed') AS processed_events,
+                    COUNT(*) FILTER (WHERE status = 'Failed') AS failed_events
+                FROM ingestion_events
+                """
+            )
+
+            ingestion_stats = cursor.fetchone()
+            
+            cursor.execute(
+                """
+                SELECT
                     model_version,
                     COUNT(*) AS total_predictions
                 FROM product_predictions
@@ -1103,6 +1284,16 @@ def get_metrics():
         else 0
     )
 
+    total_ingestion_events = int(ingestion_stats[0] or 0)
+    processed_ingestion_events = int(ingestion_stats[1] or 0)
+    failed_ingestion_events = int(ingestion_stats[2] or 0)
+
+    ingestion_failure_rate = (
+        failed_ingestion_events / total_ingestion_events
+        if total_ingestion_events
+        else 0
+    )
+
     predictions_by_model_version = {
         row[0]: int(row[1])
         for row in model_version_rows
@@ -1144,6 +1335,12 @@ def get_metrics():
             "processed_reviews": processed_reviews,
             "total_queue_items": total_review_queue_items,
             "processing_rate": review_queue_processing_rate
+        },
+        "ingestion_monitoring": {
+            "total_events": total_ingestion_events,
+            "processed_events": processed_ingestion_events,
+            "failed_events": failed_ingestion_events,
+            "failure_rate": ingestion_failure_rate
         },
         "thresholds": {
             "duplicate_threshold": 0.90,
@@ -1204,4 +1401,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+
+
+
+
+
 
