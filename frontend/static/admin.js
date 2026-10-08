@@ -78,6 +78,25 @@ async function loadDashboard() {
         (ingestion.failure_rate * 100).toFixed(2) + "%";
 
     //-----------------------------------
+    // Drift Monitoring
+    //-----------------------------------
+
+    const driftResponse =
+        await fetch(`${API}/drift-monitoring`);
+
+    const driftData =
+        await driftResponse.json();
+
+    document.getElementById("overallDriftStatus").innerText =
+        driftData.overall_status;
+
+    document.getElementById("categoryDriftStatus").innerText =
+        driftData.category_distribution.status;
+
+    document.getElementById("confidenceDriftStatus").innerText =
+        driftData.confidence_distribution.status;
+
+    //-----------------------------------
     // Review Queue Monitoring
     //-----------------------------------
 
@@ -477,6 +496,7 @@ async function loadCharts() {
 }
 
 loadCharts();
+
 
 
 
