@@ -26,6 +26,7 @@ import uuid
 from services.inference.decision_engine import evaluate_decision
 from services.database.model_registry import get_model_versions
 from services.monitoring.monitoring import evaluate_monitoring
+from services.monitoring.human_feedback import evaluate_human_feedback_quality
 
 def translate_to_english(text: str) -> str:
     """
@@ -1355,6 +1356,11 @@ def get_metrics():
 @app.get("/drift-monitoring")
 def drift_monitoring():
     return evaluate_monitoring(date(2026, 9, 16))
+
+@app.get("/human-feedback-quality")
+def human_feedback_quality():
+    return evaluate_human_feedback_quality()
+
 @app.get("/dashboard-charts")
 def dashboard_charts():
 

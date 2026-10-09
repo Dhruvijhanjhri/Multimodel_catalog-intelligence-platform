@@ -59,6 +59,27 @@ async function loadDashboard() {
         (feedback.correction_rate * 100).toFixed(2) + "%";
 
     //-----------------------------------
+    // Human Feedback Quality
+    //-----------------------------------
+
+    const qualityResponse =
+        await fetch(`${API}/human-feedback-quality`);
+
+    const qualityData =
+        await qualityResponse.json();
+
+    document.getElementById("validatedAccuracy").innerText =
+        qualityData.validated_accuracy === null
+            ? "--"
+            : `${(qualityData.validated_accuracy * 100).toFixed(2)}%`;
+
+    document.getElementById("validatedPredictions").innerText =
+        qualityData.validated_predictions;
+
+    document.getElementById("humanFeedbackQualityStatus").innerText =
+        qualityData.status;
+
+    //-----------------------------------
     // Ingestion Monitoring
     //-----------------------------------
 
