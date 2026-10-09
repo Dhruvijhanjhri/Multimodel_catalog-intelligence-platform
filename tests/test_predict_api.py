@@ -234,6 +234,28 @@ class TestPredictAPI(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["duplicate_score"], 0.0)
+    def test_missing_image_returns_validation_error(self):
+        response = self.client.post(
+            "/predict",
+            data={"title": "Running shoes"},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_missing_title_returns_validation_error(self):
+        response = self.client.post(
+            "/predict",
+            files={
+                "image": (
+                    "test_shoes.jpg",
+                    b"mock image content",
+                    "image/jpeg",
+                )
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+
 
 
 if __name__ == "__main__":
