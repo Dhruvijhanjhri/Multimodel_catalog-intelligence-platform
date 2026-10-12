@@ -3,7 +3,7 @@
 // AI Product Analysis
 // =====================================================
 
-const FASTAPI_URL = "http://127.0.0.1:8000";
+const FASTAPI_URL = "http://127.0.0.1:8001";
 
 const imageInput =
     document.getElementById("sellerProductImage");
