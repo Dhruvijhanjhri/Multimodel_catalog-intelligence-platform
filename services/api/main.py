@@ -142,7 +142,8 @@ class PredictRequest(BaseModel):
 @app.post("/predict")
 async def predict_endpoint(
     image: UploadFile = File(...),
-    title: str = Form(...)
+    title: str = Form(...),
+    enqueue_review: bool = Form(True),
 ):
 
     upload_dir = PROJECT_ROOT / "uploads"
@@ -217,8 +218,8 @@ async def predict_endpoint(
     result["decision"] = decision_result["decision"]
     result["review_reasons"] = reason
     
-    # Save only if needed
-    if reason:
+    # Preserve queue creation for existing clients; seller analysis opts out.
+    if reason and enqueue_review:
 
         add_to_review_queue(
 
@@ -801,6 +802,7 @@ def create_seller_product(request: SellerProductRequest):
                     %s,
                     CURRENT_TIMESTAMP
                 )
+                RETURNING id
                 """,
                 (
                     product_id,
@@ -810,6 +812,8 @@ def create_seller_product(request: SellerProductRequest):
                     "seller_portal",
                 ),
             )
+            prediction_id = cursor.fetchone()[0]
+
         decision_result = evaluate_decision(
             confidence=request.confidence,
             mismatch=request.mismatch,
@@ -829,6 +833,8 @@ def create_seller_product(request: SellerProductRequest):
                 image_similarity=request.image_title_similarity,
                 duplicate_score=request.duplicate_score,
                 reason=", ".join(reason),
+                prediction_id=prediction_id,
+                conn=conn,
             )
 
         conn.commit()
@@ -975,8 +981,17 @@ def approve_review(item_id: int):
                 FROM review_queue rq
                 JOIN products p
                     ON p.item_id = rq.item_id
-                JOIN product_predictions pp
-                    ON pp.product_id = p.id
+                LEFT JOIN LATERAL (
+                    SELECT pp.id
+                    FROM product_predictions pp
+                    WHERE pp.product_id = p.id
+                      AND (
+                          rq.prediction_id IS NULL
+                          OR pp.id = rq.prediction_id
+                      )
+                    ORDER BY pp.created_at DESC, pp.id DESC
+                    LIMIT 1
+                ) pp ON TRUE
                 WHERE rq.id = %s
                 """,
                 (item_id,),
@@ -1069,8 +1084,17 @@ def reject_review(
                 FROM review_queue rq
                 JOIN products p
                     ON p.item_id = rq.item_id
-                JOIN product_predictions pp
-                    ON pp.product_id = p.id
+                LEFT JOIN LATERAL (
+                    SELECT pp.id
+                    FROM product_predictions pp
+                    WHERE pp.product_id = p.id
+                      AND (
+                          rq.prediction_id IS NULL
+                          OR pp.id = rq.prediction_id
+                      )
+                    ORDER BY pp.created_at DESC, pp.id DESC
+                    LIMIT 1
+                ) pp ON TRUE
                 WHERE rq.id = %s
                 """,
                 (item_id,),

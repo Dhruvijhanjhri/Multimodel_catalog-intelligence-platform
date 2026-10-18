@@ -24,6 +24,8 @@ let latestImageName = null;
 
 imageInput.addEventListener("change", () => {
 
+    invalidateSellerAnalysis();
+
     const image = imageInput.files[0];
 
     if (!image)
@@ -35,6 +37,20 @@ imageInput.addEventListener("change", () => {
     imagePreview.style.display = "block";
 
 });
+
+document.getElementById("sellerProductTitle").addEventListener("input", () => {
+    invalidateSellerAnalysis();
+});
+
+function invalidateSellerAnalysis() {
+    latestAIResult = null;
+    latestImageName = null;
+
+    const resultSection = document.getElementById("sellerAIResult");
+    if (resultSection) {
+        resultSection.style.display = "none";
+    }
+}
 
 
 // =====================================================
@@ -88,6 +104,9 @@ analyzeBtn.addEventListener("click", async () => {
             "title",
             title
         );
+
+        // Queue the item only after the seller saves it.
+        formData.append("enqueue_review", "false");
 
 
         const response =
@@ -360,6 +379,17 @@ document.addEventListener("click", async (e) => {
         alert(data.message);
 
         e.target.innerHTML = "Product Submitted";
+
+        invalidateSellerAnalysis();
+
+        try {
+            await loadSellerProducts();
+        } catch (refreshError) {
+            console.error(
+                "Product saved, but catalog refresh failed:",
+                refreshError
+            );
+        }
 
     }
 

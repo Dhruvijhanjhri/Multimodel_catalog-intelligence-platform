@@ -1,10 +1,8 @@
-
 import importlib
 import sys
 import types
 import unittest
 from unittest.mock import patch, MagicMock
-
 import numpy as np
 import pandas as pd
 import torch
@@ -134,10 +132,15 @@ class TestPredictAPI(unittest.TestCase):
             if path.exists():
                 path.unlink()
 
-    def post_prediction(self):
+    def post_prediction(self, enqueue_review=None):
+        form_data = {"title": "Running shoes"}
+
+        if enqueue_review is not None:
+            form_data["enqueue_review"] = str(enqueue_review).lower()
+
         response = self.client.post(
             "/predict",
-            data={"title": "Running shoes"},
+            data=form_data,
             files={
                 "image": (
                     "test_shoes.jpg",
@@ -155,7 +158,6 @@ class TestPredictAPI(unittest.TestCase):
                 )
 
         return response
-
     def test_prediction_returns_expected_fields(self):
         with patch.object(
             self.api,
@@ -218,6 +220,27 @@ class TestPredictAPI(unittest.TestCase):
             queue_item["reason"],
         )
 
+    def test_seller_analysis_opt_out_skips_review_queue(self):
+        with (
+            patch.object(
+                self.api,
+                "evaluate_decision",
+                return_value={
+                    "decision": "REVIEW",
+                    "reasons": ["low_confidence"],
+                },
+            ),
+            patch.object(
+                self.api,
+                "add_to_review_queue",
+            ) as add_review,
+        ):
+            response = self.post_prediction(enqueue_review=False)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["decision"], "REVIEW")
+        add_review.assert_not_called()
+
     def test_duplicate_check_failure_does_not_crash_prediction(self):
         with (
             patch.object(
@@ -234,6 +257,7 @@ class TestPredictAPI(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["duplicate_score"], 0.0)
+
     def test_missing_image_returns_validation_error(self):
         response = self.client.post(
             "/predict",
@@ -241,6 +265,120 @@ class TestPredictAPI(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
+
+    def test_approve_records_exact_prediction_id(self):
+        conn = MagicMock()
+        cursor = MagicMock()
+        conn.cursor.return_value.__enter__.return_value = cursor
+        cursor.fetchone.return_value = (
+            "seller-item-1",
+            "Pending",
+            101,
+            202,
+        )
+        cursor.rowcount = 1
+
+        with (
+            patch.object(self.api, "get_connection", return_value=conn),
+            patch.object(self.api, "add_product_review"),
+        ):
+            response = self.client.put("/review-queue/1/approve")
+
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+
+        insert_calls = [
+            c for c in cursor.execute.call_args_list
+            if "INSERT INTO product_reviews" in c.args[0]
+        ]
+        self.assertEqual(len(insert_calls), 1)
+
+        saved_values = insert_calls[0].args[1]
+        self.assertEqual(saved_values[0], 101)  # product_id
+        self.assertEqual(saved_values[1], 202)  # exact prediction_id
+        self.assertEqual(saved_values[2], "admin")
+        self.assertEqual(saved_values[3], "Approved")
+
+        conn.commit.assert_called_once()
+        conn.close.assert_called_once()
+
+    def test_reject_records_exact_prediction_id(self):
+        conn = MagicMock()
+        cursor = MagicMock()
+        conn.cursor.return_value.__enter__.return_value = cursor
+        cursor.fetchone.return_value = (
+            "seller-item-1",
+            "Pending",
+            101,
+            202,
+        )
+        cursor.rowcount = 1
+
+        with patch.object(
+            self.api,
+            "get_connection",
+            return_value=conn,
+        ):
+            response = self.client.put(
+                "/review-queue/1/reject",
+                params={
+                    "corrected_category": "Footwear",
+                    "feedback": "Incorrect category",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+
+        insert_calls = [
+            c for c in cursor.execute.call_args_list
+            if "INSERT INTO product_reviews" in c.args[0]
+        ]
+        self.assertEqual(len(insert_calls), 1)
+
+        saved_values = insert_calls[0].args[1]
+        self.assertEqual(saved_values[0], 101)
+        self.assertEqual(saved_values[1], 202)
+        self.assertEqual(saved_values[2], "admin")
+        self.assertEqual(saved_values[3], "Rejected")
+        self.assertEqual(saved_values[4], "Footwear")
+        self.assertEqual(saved_values[5], "Incorrect category")
+
+        conn.commit.assert_called_once()
+        conn.close.assert_called_once()
+
+
+    def test_processed_review_is_not_recorded_twice(self):
+        conn = MagicMock()
+        cursor = MagicMock()
+        conn.cursor.return_value.__enter__.return_value = cursor
+        cursor.fetchone.return_value = (
+            "seller-item-1",
+            "Approved",
+            101,
+            202,
+        )
+
+        with patch.object(
+            self.api,
+            "get_connection",
+            return_value=conn,
+        ):
+            response = self.client.put("/review-queue/1/approve")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["success"])
+
+        insert_calls = [
+            c for c in cursor.execute.call_args_list
+            if "INSERT INTO product_reviews" in c.args[0]
+        ]
+        self.assertEqual(insert_calls, [])
+
+        conn.commit.assert_not_called()
+        conn.rollback.assert_called_once()
+        conn.close.assert_called_once()
 
     def test_missing_title_returns_validation_error(self):
         response = self.client.post(
