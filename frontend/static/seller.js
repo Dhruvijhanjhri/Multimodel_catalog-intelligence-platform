@@ -1,4 +1,4 @@
-// =====================================================
+﻿// =====================================================
 // Seller Portal
 // AI Product Analysis
 // =====================================================
@@ -264,7 +264,7 @@ function displayAIResult(result) {
                     <div class="border rounded p-3">
 
                         <small class="text-muted">
-                            Image–Text Similarity
+                            Imageâ€“Text Similarity
                         </small>
 
                         <h5 class="fw-bold mt-2 mb-0">
@@ -442,10 +442,10 @@ async function loadSellerProducts() {
             data.total_items;
 
         document.getElementById("pendingReviewCount").textContent =
-            data.items.filter(product => !product.review_decision).length;
+            data.items.filter(product => product.workflow_status === "Pending Review").length;
 
         document.getElementById("approvedProductsCount").textContent =
-            data.items.filter(product => product.review_decision === "Approved").length;
+            data.items.filter(product => product.workflow_status === "Approved").length;
 
         if (!data.items || data.items.length === 0) {
             empty.style.display = "block";
@@ -454,37 +454,40 @@ async function loadSellerProducts() {
 
         wrapper.style.display = "block";
 
-        tableBody.innerHTML = data.items.map(product => {
+        const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
 
-            const reviewStatus =
-                product.review_decision || "Not Reviewed";
+        tableBody.innerHTML = data.items.map(product => {
+            const reviewStatus = product.workflow_status || "Not Reviewed";
+            const details = [];
+
+            if (product.corrected_category) {
+                details.push(`Corrected category: ${escapeHtml(product.corrected_category)}`);
+            }
+
+            if (product.review_feedback) {
+                details.push(escapeHtml(product.review_feedback));
+            }
 
             return `
                 <tr>
-                    <td title="${product.title || ""}">
-                        ${product.title || "-"}
+                    <td title="${escapeHtml(product.title || "")}">
+                        ${escapeHtml(product.title || "-")}
                     </td>
-
-                    <td>
-                        ${product.brand || "-"}
-                    </td>
-
-                    <td>
-                        ${product.category || "-"}
-                    </td>
-
-                    <td>
-                        ${product.confidence != null
-                            ? `${(product.confidence * 100).toFixed(1)}%`
-                            : "-"}
-                    </td>
-
-                    <td>
-                        ${reviewStatus}
-                    </td>
+                    <td>${escapeHtml(product.brand || "-")}</td>
+                    <td>${escapeHtml(product.category || "-")}</td>
+                    <td>${product.confidence != null
+                        ? `${(product.confidence * 100).toFixed(1)}%`
+                        : "-"}</td>
+                    <td>${escapeHtml(reviewStatus)}</td>
+                    <td>${details.length ? details.map(detail => `<div>${detail}</div>`).join("") : "-"}</td>
                 </tr>
             `;
-
         }).join("");
 
     }
@@ -553,10 +556,27 @@ if (bulkAnalyzeBtn) {
                 );
             }
 
-            bulkUploadStatus.textContent =
-                `Successfully processed ${result.processed_products} of ${result.total_products} products.`;
+            const successfulRows =
+                result.successful_rows ?? result.processed_products ?? 0;
+            const failedRows = result.failed_rows ?? 0;
+            const skippedRows = result.skipped_rows ?? 0;
 
-            alert("Bulk catalog processing completed successfully.");
+            bulkUploadStatus.textContent =
+                `Batch completed: ${successfulRows} successful, ${failedRows} failed, ${skippedRows} skipped out of ${result.total_products} products.`;
+
+            if (failedRows > 0 || skippedRows > 0) {
+                alert(
+                    `Bulk upload completed with some issues.\n` +
+                    `Successful: ${successfulRows}\n` +
+                    `Failed: ${failedRows}\n` +
+                    `Skipped: ${skippedRows}`
+                );
+            } else {
+                alert(
+                    `Bulk catalog processing completed successfully!\n` +
+                    `${successfulRows} products processed.`
+                );
+            }
 
             loadSellerProducts();
 

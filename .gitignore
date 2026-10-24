@@ -111,3 +111,8 @@ scripts/inspect_classifier_baseline.py
 
 # Local active learning generated data
 data/active_learning/
+
+# ==========================
+# Local Backup Files
+# ==========================
+*.bak

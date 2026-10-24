@@ -217,7 +217,7 @@ async def predict_endpoint(
     reason = decision_result["reasons"]
     result["decision"] = decision_result["decision"]
     result["review_reasons"] = reason
-    
+
     # Preserve queue creation for existing clients; seller analysis opts out.
     if reason and enqueue_review:
 
@@ -408,7 +408,7 @@ async def create_bulk_seller_products(
 
             if not csv_image_name or csv_image_name.lower() == "nan":
                 failed_rows += 1
-            
+
                 results.append({
                     "product_id": product_id,
                     "success": False,
@@ -426,102 +426,108 @@ async def create_bulk_seller_products(
                 })
                 continue
 
-            source_image_path = image_map[csv_image_name]
-
-            translated_title = translate_to_english(title)
-            prediction = predict(
-                image_path=str(source_image_path),
-                title=translated_title,
-            )
-
-            taxonomy_result = validate_taxonomy(
-                prediction["image_embedding"],
-                prediction["text_embedding"],
-                prediction["category"],
-            )
-
-            taxonomy_status = determine_taxonomy_status(
-                confidence=prediction["confidence"],
-                support_margin=taxonomy_result["support_margin"],
-                mismatch=prediction["mismatch"],
-            )
-
-            duplicate_score = 0.0
 
             try:
-                with torch.no_grad():
+                source_image_path = image_map[csv_image_name]
 
-                    tokens = clip_tokenizer([translated_title]).to(device)
+                existing_product = None
 
-                    features = clip_model.encode_text(tokens)
+                with get_connection() as check_conn:
+                    with check_conn.cursor() as check_cursor:
+                        check_cursor.execute(
+                            """
+                            SELECT id
+                            FROM products
+                            WHERE item_id = %s
+                            LIMIT 1
+                            """,
+                            (product_id,),
+                        )
+                        existing_product = check_cursor.fetchone()
 
-                    features = features / features.norm(dim=-1, keepdim=True)
+                if existing_product:
+                    skipped_rows += 1
+                    results.append({
+                        "product_id": product_id,
+                        "success": True,
+                        "skipped": True,
+                        "message": "Product already exists. Skipped duplicate ingestion.",
+                        "database_product_id": existing_product[0],
+                    })
+                    continue
 
-                    query_emb = features.cpu().numpy().astype(np.float32)
+                translated_title = translate_to_english(title)
+                prediction = predict(
+                    image_path=str(source_image_path),
+                    title=translated_title,
+                )
 
-                scores, indices = faiss_index.search(query_emb, 1)
+                taxonomy_result = validate_taxonomy(
+                    prediction["image_embedding"],
+                    prediction["text_embedding"],
+                    prediction["category"],
+                )
 
-                duplicate_score = float(scores[0][0])
+                taxonomy_status = determine_taxonomy_status(
+                    confidence=prediction["confidence"],
+                    support_margin=taxonomy_result["support_margin"],
+                    mismatch=prediction["mismatch"],
+                )
+
+                duplicate_score = 0.0
+
+                try:
+                    with torch.no_grad():
+                        tokens = clip_tokenizer([translated_title]).to(device)
+                        features = clip_model.encode_text(tokens)
+                        features = features / features.norm(dim=-1, keepdim=True)
+                        query_emb = features.cpu().numpy().astype(np.float32)
+
+                    scores, indices = faiss_index.search(query_emb, 1)
+                    duplicate_score = float(scores[0][0])
+
+                except Exception as e:
+                    print("Bulk duplicate check failed:", e)
+
+                decision_result = evaluate_decision(
+                    confidence=prediction["confidence"],
+                    mismatch=prediction["mismatch"],
+                    taxonomy_status=taxonomy_status,
+                    duplicate_score=duplicate_score,
+                )
+
+                decision = decision_result["decision"]
+                review_reasons = decision_result["reasons"]
+
+                stored_image_name = f"{uuid.uuid4()}_{csv_image_name}"
+                stored_image_path = PROJECT_ROOT / "uploads" / stored_image_name
+
+                with open(source_image_path, "rb") as source:
+                    with open(stored_image_path, "wb") as destination:
+                        destination.write(source.read())
+
+                seller_request = SellerProductRequest(
+                    item_id=product_id,
+                    title=title,
+                    brand=None if pd.isna(row["brand"]) else str(row["brand"]),
+                    description=None,
+                    image_name=stored_image_name,
+                    category=prediction["category"],
+                    confidence=prediction["confidence"],
+                    image_title_similarity=prediction["image_title_similarity"],
+                    mismatch=prediction["mismatch"],
+                    duplicate_score=duplicate_score,
+                    taxonomy_status=taxonomy_status,
+                    taxonomy_margin=taxonomy_result["support_margin"],
+                    model_version=MODEL_VERSION,
+                )
 
             except Exception as e:
-                print("Bulk duplicate check failed:", e)
-
-            decision_result = evaluate_decision(
-                confidence=prediction["confidence"],
-                mismatch=prediction["mismatch"],
-                taxonomy_status=taxonomy_status,
-                duplicate_score=duplicate_score,
-            )
-
-            decision = decision_result["decision"]
-            review_reasons = decision_result["reasons"]
-
-            stored_image_name = f"{uuid.uuid4()}_{csv_image_name}"
-            stored_image_path = PROJECT_ROOT / "uploads" / stored_image_name
-
-            with open(source_image_path, "rb") as source:
-                with open(stored_image_path, "wb") as destination:
-                    destination.write(source.read())
-
-            seller_request = SellerProductRequest(
-                item_id=str(row["product_id"]),
-                title=str(row["title"]),
-                brand=None if pd.isna(row["brand"]) else str(row["brand"]),
-                description=None,
-                image_name=stored_image_name,
-                category=prediction["category"],
-                confidence=prediction["confidence"],
-                image_title_similarity=prediction["image_title_similarity"],
-                mismatch=prediction["mismatch"],
-                duplicate_score=duplicate_score,
-                taxonomy_status=taxonomy_status,
-                taxonomy_margin=taxonomy_result["support_margin"],
-                model_version=MODEL_VERSION,
-            )
-
-            existing_product = None
-
-            with get_connection() as check_conn:
-                with check_conn.cursor() as check_cursor:
-                    check_cursor.execute(
-                        """
-                        SELECT id
-                        FROM products
-                        WHERE item_id = %s
-                        LIMIT 1
-                        """,
-                        (str(row["product_id"]),),
-                    )
-                    existing_product = check_cursor.fetchone()
-
-            if existing_product:
-                skipped_rows += 1
+                failed_rows += 1
                 results.append({
-                    "product_id": str(row["product_id"]),
-                    "success": True,
-                    "skipped": True,
-                    "message": "Product already exists. Skipped duplicate ingestion.",
-                    "database_product_id": existing_product[0],
+                    "product_id": product_id,
+                    "success": False,
+                    "message": f"Product processing failed: {str(e)}",
                 })
                 continue
 
@@ -529,9 +535,8 @@ async def create_bulk_seller_products(
                 saved = create_seller_product(seller_request)
             except Exception as e:
                 failed_rows += 1
-
                 results.append({
-                    "product_id": str(row["product_id"]),
+                    "product_id": product_id,
                     "success": False,
                     "message": f"Product ingestion failed: {str(e)}",
                 })
@@ -540,7 +545,7 @@ async def create_bulk_seller_products(
             successful_rows += 1
 
             results.append({
-                "product_id": str(row["product_id"]),
+                "product_id": product_id,
                 "success": True,
                 "database_product_id": saved["product_id"],
                 "category": prediction["category"],
@@ -649,35 +654,82 @@ def get_ingestion_events():
     finally:
         conn.close()
 
+
 @app.get("/seller/products")
 def get_seller_products():
-
     conn = get_connection()
 
     try:
-
         with conn.cursor() as cursor:
-
             cursor.execute(
                 """
                 SELECT
-                    p.id,
+                    p.id AS product_id,
                     p.item_id,
                     p.title,
                     p.brand,
-                    p.category,
+                    COALESCE(pr.corrected_category, pp.predicted_category, p.category) AS category,
                     pp.confidence,
                     pp.model_version,
-                    pr.decision,
+                    pr.decision AS review_decision,
                     pr.corrected_category,
-                    pr.feedback
+                    pr.feedback AS review_feedback,
+                    CASE
+                        WHEN pr.decision IN ('Approved', 'Rejected')
+                            THEN pr.decision
+                        WHEN rq.status = 'Pending'
+                            THEN 'Pending Review'
+                        WHEN rq.status = 'Approved'
+                            THEN 'Approved'
+                        WHEN rq.status = 'Rejected'
+                            THEN 'Rejected'
+                        WHEN pp.prediction_id IS NOT NULL
+                            THEN 'Passed AI Checks'
+                        ELSE 'Not Reviewed'
+                    END AS workflow_status
                 FROM products p
-                LEFT JOIN product_predictions pp
-                    ON pp.product_id = p.id
-                LEFT JOIN product_reviews pr
-                    ON pr.product_id = p.id
+
+                LEFT JOIN LATERAL (
+                    SELECT
+                        id AS prediction_id,
+                        predicted_category,
+                        confidence,
+                        model_version
+                    FROM product_predictions
+                    WHERE product_id = p.id
+                    ORDER BY created_at DESC NULLS LAST, id DESC
+                    LIMIT 1
+                ) pp ON TRUE
+
+                LEFT JOIN LATERAL (
+                    SELECT
+                        decision,
+                        corrected_category,
+                        feedback
+                    FROM product_reviews
+                    WHERE product_id = p.id
+                      AND (
+                          pp.prediction_id IS NULL
+                          OR prediction_id = pp.prediction_id
+                      )
+                    ORDER BY created_at DESC NULLS LAST, id DESC
+                    LIMIT 1
+                ) pr ON TRUE
+
+                LEFT JOIN LATERAL (
+                    SELECT status
+                    FROM review_queue
+                    WHERE item_id = p.item_id
+                      AND (
+                          prediction_id = pp.prediction_id
+                          OR prediction_id IS NULL
+                      )
+                    ORDER BY created_at DESC NULLS LAST, id DESC
+                    LIMIT 1
+                ) rq ON TRUE
+
                 WHERE p.source = 'seller_portal'
-                ORDER BY p.created_at DESC
+                ORDER BY p.created_at DESC NULLS LAST, p.id DESC
                 """
             )
 
@@ -694,14 +746,17 @@ def get_seller_products():
                 "review_decision",
                 "corrected_category",
                 "review_feedback",
+                "workflow_status",
+            ]
+
+            items = [
+                dict(zip(columns, row))
+                for row in rows
             ]
 
             return {
-                "total_items": len(rows),
-                "items": [
-                    dict(zip(columns, row))
-                    for row in rows
-                ]
+                "total_items": len(items),
+                "items": items,
             }
 
     finally:
@@ -1262,7 +1317,7 @@ def get_metrics():
             )
 
             ingestion_stats = cursor.fetchone()
-            
+
             cursor.execute(
                 """
                 SELECT
@@ -1290,25 +1345,25 @@ def get_metrics():
     approval_rate = (
         approved_reviews / total_reviews
         if total_reviews
-        else 0
+        else None
     )
 
     correction_rate = (
         corrected_reviews / rejected_reviews
         if rejected_reviews
-        else 0
+        else None
     )
-    
+
     review_queue_processing_rate = (
         processed_reviews / total_review_queue_items
         if total_review_queue_items
-        else 0
+        else None
     )
 
     low_confidence_rate = (
         low_confidence_predictions / total_predictions
         if total_predictions
-        else 0
+        else None
     )
 
     total_ingestion_events = int(ingestion_stats[0] or 0)
@@ -1318,7 +1373,7 @@ def get_metrics():
     ingestion_failure_rate = (
         failed_ingestion_events / total_ingestion_events
         if total_ingestion_events
-        else 0
+        else None
     )
 
     predictions_by_model_version = {
@@ -1330,8 +1385,8 @@ def get_metrics():
         "model": {
             "name": "OpenCLIP + Multimodal Classifier",
             "version": MODEL_VERSION,
-            "test_accuracy": 0.9765,
-            "validation_accuracy": 0.9835
+            "test_accuracy": None,
+            "validation_accuracy": None
         },
         "embeddings": {
             "total_embeddings": int(text_embeddings.shape[0]),
@@ -1437,12 +1492,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-
-
-
-
-
-
-

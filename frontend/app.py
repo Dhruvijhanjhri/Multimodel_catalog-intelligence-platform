@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+﻿from flask import Flask, render_template, request, jsonify, send_file
 import pandas as pd
 from pathlib import Path
 import os
@@ -154,6 +154,10 @@ def get_image(filename):
 @app.route("/admin")
 def admin_dashboard():
     return render_template("admin_dashboard.html")
+
+@app.route("/admin/monitoring")
+def admin_monitoring():
+    return render_template("admin_monitoring.html")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

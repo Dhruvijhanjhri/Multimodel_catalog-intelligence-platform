@@ -18,242 +18,96 @@
 
 <div class="container-fluid py-4">
 
-    <h2 class="fw-bold">
-        Enterprise Catalog Intelligence
-    </h2>
-
-    <p class="text-muted">
-        Admin Dashboard
-    </p>
-
-    <!-- Metrics -->
-
-    <div class="row g-4 mb-4">
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Total Products</h6>
-                <h3 id="totalProducts">--</h3>
+    <header class="admin-hero">
+        <div class="admin-hero-copy">
+            <span class="admin-eyebrow">CATALOG INTELLIGENCE PLATFORM</span>
+            <h1>Catalog Operations</h1>
+            <p>Manage product reviews, monitor catalog activity, and track ingestion batches from one workspace.</p>
+        </div>
+        <a class="admin-monitoring-link" href="{{ url_for('admin_monitoring') }}">
+            <span class="admin-link-icon">&#8599;</span>
+            Intelligence &amp; Monitoring
+        </a>
+    </header>
+    <!-- Key Metrics -->
+    <section aria-label="Key catalog metrics">
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3">
+                <div class="metric-card">
+                    <h6>Total Products</h6>
+                    <h3 id="totalProducts">--</h3>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="metric-card">
+                    <h6>Pending Reviews</h6>
+                    <h3 id="pendingReviews">--</h3>
+                    <span class="text-muted small">Queue total: <strong id="reviewCount">--</strong></span>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="metric-card">
+                    <h6>Live Predictions</h6>
+                    <h3 id="livePredictions">--</h3>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="metric-card">
+                    <h6>Failed Ingestion Events</h6>
+                    <h3 id="failedIngestionEvents">--</h3>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Embeddings</h6>
-                <h3 id="totalEmbeddings">--</h3>
+
+
+    <div class="row">
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h5 class="mb-3">
+                        Dataset Category Distribution
+                    </h5>
+
+                    <div style="height:300px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+
+                </div>
+
             </div>
+
         </div>
 
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Review Queue</h6>
-                <h3 id="reviewCount">--</h3>
-            </div>
-        </div>
+        <div class="col-lg-6">
 
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Model Accuracy</h6>
-                <h3 id="accuracy">--</h3>
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
+                    <h5 class="mb-3">
+                        Review Queue Reasons
+                    </h5>
+
+                    <div style="height:300px;">
+                        <canvas id="reasonChart"></canvas>
+                    </div>
+
+                </div>
+
             </div>
+
         </div>
 
     </div>
 
-    <!-- ML Monitoring -->
 
-    <div class="row g-4 mb-4">
 
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Live Predictions</h6>
-                <h3 id="livePredictions">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Average Confidence</h6>
-                <h3 id="averageConfidence">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Low Confidence Rate</h6>
-                <h3 id="lowConfidenceRate">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Active Model</h6>
-                <h3 id="activeModel" style="font-size: 1rem;">--</h3>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Human Feedback Monitoring -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Human Reviews</h6>
-                <h3 id="humanReviews">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Approval Rate</h6>
-                <h3 id="approvalRate">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Correction Rate</h6>
-                <h3 id="correctionRate">--</h3>
-            </div>
-        </div>
-    </div>
-
-    <!-- Human Feedback Quality -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Observed Validated Accuracy</h6>
-                <h3 id="validatedAccuracy">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Validated Predictions</h6>
-                <h3 id="validatedPredictions">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Quality Status</h6>
-                <h3 id="humanFeedbackQualityStatus">--</h3>
-            </div>
-        </div>
-    </div>
-
-    <!-- Review Queue Monitoring -->
-
-    <div class="row g-4 mb-4">
-
-        <div class="col-md-6">
-            <div class="metric-card">
-                <h6>Pending Reviews</h6>
-                <h3 id="pendingReviews">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="metric-card">
-                <h6>Queue Processing Rate</h6>
-                <h3 id="queueProcessingRate">--</h3>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Ingestion Monitoring -->
-
-    <div class="row g-4 mb-4">
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Total Ingestion Events</h6>
-                <h3 id="totalIngestionEvents">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Processed</h6>
-                <h3 id="processedIngestionEvents">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Failed</h6>
-                <h3 id="failedIngestionEvents">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="metric-card">
-                <h6>Failure Rate</h6>
-                <h3 id="ingestionFailureRate">--</h3>
-            </div>
-        </div>
-
-    </div>
-    <!-- Drift Monitoring -->
-
-    <div class="row g-4 mb-4">
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Overall Drift Status</h6>
-                <h3 id="overallDriftStatus">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Category Drift</h6>
-                <h3 id="categoryDriftStatus">--</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="metric-card">
-                <h6>Confidence Drift</h6>
-                <h3 id="confidenceDriftStatus">--</h3>
-            </div>
-        </div>
-
-    </div>
-    <!-- Ingestion History -->
-
-    <div class="card shadow-sm mb-4">
-
-        <div class="card-header fw-bold">
-            Ingestion History
-        </div>
-
-        <div class="card-body">
-
-            <table class="table table-hover">
-
-                <thead>
-                <tr>
-                    <th>Batch / Event</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                    <th>Successful</th>
-                    <th>Failed</th>
-                    <th>Skipped</th>
-                    <th>Date</th>
-                </tr>
-                </thead>
-
-                <tbody id="ingestionHistoryTable">
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
     <!-- Review Queue -->
 
     <div class="card shadow-sm">
@@ -300,51 +154,43 @@
 
     </div>
 
-    <hr class="my-5">
 
-    <div class="row">
 
-        <div class="col-lg-6">
+    <!-- Ingestion History -->
 
-            <div class="card shadow-sm">
+    <div class="card shadow-sm mb-4">
 
-                <div class="card-body">
-
-                    <h5 class="mb-3">
-                        Category Distribution
-                    </h5>
-
-                    <div style="height:300px;">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
-
-                </div>
-
-            </div>
-
+        <div class="card-header fw-bold">
+            Ingestion History
         </div>
 
-        <div class="col-lg-6">
+        <div class="card-body">
 
-            <div class="card shadow-sm">
+            <table class="table table-hover">
 
-                <div class="card-body">
+                <thead>
+                <tr>
+                    <th>Batch / Event</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Successful</th>
+                    <th>Failed</th>
+                    <th>Skipped</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
 
-                    <h5 class="mb-3">
-                        Review Queue Reasons
-                    </h5>
+                <tbody id="ingestionHistoryTable">
+                </tbody>
 
-                    <div style="height:300px;">
-                        <canvas id="reasonChart"></canvas>
-                    </div>
-
-                </div>
-
-            </div>
+            </table>
 
         </div>
 
     </div>
+
+
 
 </div>
 
@@ -455,10 +301,13 @@
     </div>
 
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='admin.js') }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='admin.js') }}"></script>
 </body>
 
 </html>

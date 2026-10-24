@@ -2,137 +2,33 @@ const API = "http://127.0.0.1:8001";
 
 async function loadDashboard() {
 
-    //-----------------------------------
-    // Metrics
-    //-----------------------------------
+    // Core operational metrics
+    const metricsResponse = await fetch(`${API}/metrics`);
 
-    const metrics = await fetch(`${API}/metrics`);
-    const metricsData = await metrics.json();
+    if (!metricsResponse.ok) {
+        throw new Error(`Metrics API returned HTTP ${metricsResponse.status}`);
+    }
+
+    const metricsData = await metricsResponse.json();
 
     document.getElementById("totalProducts").innerText =
-        metricsData.dataset.total_products;
+        metricsData.dataset.total_products.toLocaleString();
 
-    document.getElementById("totalEmbeddings").innerText =
-        metricsData.embeddings.total_embeddings;
-
-    document.getElementById("accuracy").innerText =
-        (metricsData.model.test_accuracy * 100).toFixed(2) + "%";
-
-    //-----------------------------------
-    // ML Monitoring
-    //-----------------------------------
-
-    const monitoring =
-        metricsData.prediction_monitoring;
+    const monitoring = metricsData.prediction_monitoring || {};
 
     document.getElementById("livePredictions").innerText =
-        monitoring.total_predictions.toLocaleString();
+        (monitoring.total_predictions ?? 0).toLocaleString();
 
-    document.getElementById("averageConfidence").innerText =
-        (monitoring.average_confidence * 100).toFixed(2) + "%";
-
-    document.getElementById("lowConfidenceRate").innerText =
-        (monitoring.low_confidence_rate * 100).toFixed(2) + "%";
-
-    const modelVersions =
-        Object.keys(monitoring.predictions_by_model_version);
-
-    document.getElementById("activeModel").innerText =
-        modelVersions.length > 0
-            ? modelVersions[0]
-            : "N/A";
-
-    //-----------------------------------
-    // Human Feedback Monitoring
-    //-----------------------------------
-
-    const feedback =
-        metricsData.feedback_monitoring;
-
-    document.getElementById("humanReviews").innerText =
-        feedback.total_reviews.toLocaleString();
-
-    document.getElementById("approvalRate").innerText =
-        (feedback.approval_rate * 100).toFixed(2) + "%";
-
-    document.getElementById("correctionRate").innerText =
-        (feedback.correction_rate * 100).toFixed(2) + "%";
-
-    //-----------------------------------
-    // Human Feedback Quality
-    //-----------------------------------
-
-    const qualityResponse =
-        await fetch(`${API}/human-feedback-quality`);
-
-    const qualityData =
-        await qualityResponse.json();
-
-    document.getElementById("validatedAccuracy").innerText =
-        qualityData.validated_accuracy === null
-            ? "--"
-            : `${(qualityData.validated_accuracy * 100).toFixed(2)}%`;
-
-    document.getElementById("validatedPredictions").innerText =
-        qualityData.validated_predictions;
-
-    document.getElementById("humanFeedbackQualityStatus").innerText =
-        qualityData.status;
-
-    //-----------------------------------
-    // Ingestion Monitoring
-    //-----------------------------------
-
-    const ingestion =
-        metricsData.ingestion_monitoring;
-
-    document.getElementById("totalIngestionEvents").innerText =
-        ingestion.total_events.toLocaleString();
-
-    document.getElementById("processedIngestionEvents").innerText =
-        ingestion.processed_events.toLocaleString();
+    const ingestion = metricsData.ingestion_monitoring || {};
 
     document.getElementById("failedIngestionEvents").innerText =
-        ingestion.failed_events.toLocaleString();
+        (ingestion.failed_events ?? 0).toLocaleString();
 
-    document.getElementById("ingestionFailureRate").innerText =
-        (ingestion.failure_rate * 100).toFixed(2) + "%";
-
-    //-----------------------------------
-    // Drift Monitoring
-    //-----------------------------------
-
-    const driftResponse =
-        await fetch(`${API}/drift-monitoring`);
-
-    const driftData =
-        await driftResponse.json();
-
-    document.getElementById("overallDriftStatus").innerText =
-        driftData.overall_status;
-
-    document.getElementById("categoryDriftStatus").innerText =
-        driftData.category_distribution.status;
-
-    document.getElementById("confidenceDriftStatus").innerText =
-        driftData.confidence_distribution.status;
-
-    //-----------------------------------
-    // Review Queue Monitoring
-    //-----------------------------------
-
-    const queueMonitoring =
-        metricsData.review_queue_monitoring;
+    const queueMonitoring = metricsData.review_queue_monitoring || {};
 
     document.getElementById("pendingReviews").innerText =
-        queueMonitoring.pending_reviews.toLocaleString();
+        (queueMonitoring.pending_reviews ?? 0).toLocaleString();
 
-    document.getElementById("queueProcessingRate").innerText =
-        (queueMonitoring.processing_rate * 100).toFixed(2) + "%";
-
-
-    //-----------------------------------
-    //-----------------------------------
     // Ingestion History
     //-----------------------------------
 
@@ -203,9 +99,18 @@ async function loadDashboard() {
                     </div>
                 </td>
                 <td>${item.category}</td>
-                <td>${item.reason}</td>
-                <td>${(item.confidence * 100).toFixed(1)}%</td>
-                <td>${(item.duplicate_score * 100).toFixed(1)}%</td>
+                <td>
+                    <strong>${item.reason || "Manual Review"}</strong>
+                    <div class="small text-muted">
+                        Mismatch: ${
+                            Number.isFinite(Number(item.mismatch_score))
+                                ? (Number(item.mismatch_score) * 100).toFixed(1) + "%"
+                                : "--"
+                        }
+                    </div>
+                </td>
+                <td>${(Number(item.confidence ?? 0) * 100).toFixed(1)}%</td>
+                <td>${(Number(item.duplicate_score ?? 0) * 100).toFixed(1)}%</td>
                 <td>${item.created_at}</td>
                 <td>
                     <button class="btn btn-success btn-sm approveBtn"
@@ -280,126 +185,132 @@ async function loadDashboard() {
     }
 
     renderReviewTable(currentPage);
-    //--------------------------------------------------
-    // Approve
-    //--------------------------------------------------
+}
 
-    document.addEventListener("click", async (e) => {
+// Review actions: register these handlers only once.
+async function readApiResponse(response) {
+    let data = {};
 
-        if (!e.target.classList.contains("approveBtn"))
-            return;
+    try {
+        data = await response.json();
+    } catch (_) {
+        // The API may return an empty or non-JSON response.
+    }
 
-        const id = e.target.dataset.id;
-
-        e.target.disabled = true;
-        e.target.innerHTML = "Approving...";
-
-        const response = await fetch(
-            `${API}/review-queue/${id}/approve`,
-            {
-                method: "PUT"
-            }
+    if (!response.ok || data.success === false) {
+        throw new Error(
+            data.detail || data.message || `Request failed (HTTP ${response.status})`
         );
+    }
 
-        const data = await response.json();
+    return data;
+}
 
-        alert(data.message);
+document.addEventListener("click", async (e) => {
+    const button = e.target.closest(".approveBtn");
+    if (!button || button.disabled) return;
 
-        loadDashboard();
+    const id = button.dataset.id;
+    button.disabled = true;
+    button.innerHTML = "Approving...";
 
-    });
+    try {
+        const response = await fetch(`${API}/review-queue/${id}/approve`, {
+            method: "PUT"
+        });
+        const data = await readApiResponse(response);
 
-    //--------------------------------------------------
-    // Reject
-    //--------------------------------------------------
+        alert(data.message || "Review approved successfully.");
+        await loadDashboard();
+    } catch (error) {
+        alert(`Could not approve review: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.innerHTML = "Approve";
+    }
+});
 
-    document.addEventListener("click", async (e) => {
+document.addEventListener("click", async (e) => {
+    const button = e.target.closest(".rejectBtn");
+    if (!button) return;
 
-        if (!e.target.classList.contains("rejectBtn"))
+    const id = button.dataset.id;
+    const rejectModal = new bootstrap.Modal(
+        document.getElementById("rejectReviewModal")
+    );
+
+    const categorySelect = document.getElementById("correctedCategory");
+    const feedbackInput = document.getElementById("reviewerFeedback");
+    const confirmRejectBtn = document.getElementById("confirmRejectBtn");
+
+    categorySelect.value = "";
+    feedbackInput.value = "";
+
+    confirmRejectBtn.onclick = async () => {
+        if (confirmRejectBtn.disabled) return;
+
+        const selectedCategory = categorySelect.value;
+        const feedback = feedbackInput.value;
+
+        if (!selectedCategory) {
+            alert("Please select a corrected category.");
             return;
+        }
 
-        const id = e.target.dataset.id;
+        confirmRejectBtn.disabled = true;
+        confirmRejectBtn.innerHTML = "Rejecting...";
 
-        const rejectModal = new bootstrap.Modal(
-            document.getElementById("rejectReviewModal")
-        );
-
-        const categorySelect =
-            document.getElementById("correctedCategory");
-
-        const feedbackInput =
-            document.getElementById("reviewerFeedback");
-
-        const confirmRejectBtn =
-            document.getElementById("confirmRejectBtn");
-
-        categorySelect.value = "";
-        feedbackInput.value = "";
-
-        confirmRejectBtn.onclick = async () => {
-
-            const selectedCategory = categorySelect.value;
-            const feedback = feedbackInput.value;
-
-            if (!selectedCategory) {
-                alert("Please select a corrected category.");
-                return;
-            }
-
-            confirmRejectBtn.disabled = true;
-            confirmRejectBtn.innerHTML = "Rejecting...";
+        try {
+            const params = new URLSearchParams({
+                corrected_category: selectedCategory,
+                feedback: feedback
+            });
 
             const response = await fetch(
-                `${API}/review-queue/${id}/reject?corrected_category=${encodeURIComponent(selectedCategory)}&feedback=${encodeURIComponent(feedback)}`,
-                {
-                    method: "PUT"
-                }
+                `${API}/review-queue/${id}/reject?${params}`,
+                { method: "PUT" }
             );
+            const data = await readApiResponse(response);
 
-            const data = await response.json();
-
-            alert(data.message);
-
+            alert(data.message || "Review rejected successfully.");
             rejectModal.hide();
-
+            await loadDashboard();
+        } catch (error) {
+            alert(`Could not reject review: ${error.message}`);
+        } finally {
             confirmRejectBtn.disabled = false;
             confirmRejectBtn.innerHTML = "Confirm Reject";
+        }
+    };
 
-            loadDashboard();
+    rejectModal.show();
+});
 
-        };
+document.addEventListener("click", async (e) => {
+    const button = e.target.closest(".deleteBtn");
+    if (!button || button.disabled) return;
 
-        rejectModal.show();
+    if (!confirm("Delete this review item?")) return;
 
-    });
+    const id = button.dataset.id;
+    button.disabled = true;
+    button.innerHTML = "Deleting...";
 
-    //--------------------------------------------------
-    // Delete
-    //--------------------------------------------------
+    try {
+        const response = await fetch(`${API}/review-queue/${id}`, {
+            method: "DELETE"
+        });
+        const data = await readApiResponse(response);
 
-    document.addEventListener("click", async (e) => {
-
-        if (!e.target.classList.contains("deleteBtn"))
-            return;
-
-        if (!confirm("Delete this review item?"))
-            return;
-
-        const id = e.target.dataset.id;
-
-        await fetch(
-            `${API}/review-queue/${id}`,
-            {
-                method: "DELETE"
-            }
-        );
-
-        alert("Review Deleted Successfully");
-
-        loadDashboard();
-
-    });
-}
+        alert(data.message || "Review deleted successfully.");
+        await loadDashboard();
+    } catch (error) {
+        alert(`Could not delete review: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.innerHTML = "Delete";
+    }
+});
 
 loadDashboard();
 
@@ -517,8 +428,3 @@ async function loadCharts() {
 }
 
 loadCharts();
-
-
-
-
-
