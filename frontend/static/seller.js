@@ -195,114 +195,160 @@ function displayAIResult(result) {
 
     }
 
+        const escapeHtml = value =>
+        String(value ?? "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
 
     const confidence =
-        (result.confidence * 100)
-            .toFixed(1);
-
+        Number.isFinite(Number(result.confidence))
+            ? (Number(result.confidence) * 100).toFixed(1)
+            : "N/A";
 
     const similarity =
-        result.image_title_similarity
-            .toFixed(4);
+        Number.isFinite(Number(result.image_title_similarity))
+            ? Number(result.image_title_similarity).toFixed(4)
+            : "N/A";
 
+    const duplicateScore =
+        Number.isFinite(Number(result.duplicate_score))
+            ? Number(result.duplicate_score).toFixed(4)
+            : "N/A";
 
-    const reviewRequired =
-        result.mismatch ||
-        result.confidence < 0.70;
+    const taxonomySupport =
+        Number.isFinite(Number(result.taxonomy_support))
+            ? Number(result.taxonomy_support).toFixed(4)
+            : "N/A";
 
+    const taxonomyMargin =
+        Number.isFinite(Number(result.taxonomy_margin))
+            ? Number(result.taxonomy_margin).toFixed(4)
+            : "N/A";
+
+    const decision = String(result.decision ?? "UNKNOWN").toUpperCase();
+    const reviewRequired = decision === "REVIEW";
+
+    const reviewReasons = Array.isArray(result.review_reasons)
+        ? result.review_reasons
+        : [];
+
+    const reasonDescriptions = {
+        "Low Confidence":
+            `Prediction confidence is ${confidence}% (review threshold: below 70%).`,
+        "Image-Text Mismatch":
+            "The image and product title may describe different things.",
+        "Taxonomy Uncertainty":
+            `Taxonomy validation requires review. Support margin: ${taxonomyMargin} (configured threshold: 0.10).`,
+        "Possible Duplicate":
+            `Duplicate similarity score: ${duplicateScore} (review threshold: above 0.90).`
+    };
+
+    const reasonsHtml = reviewReasons.length
+        ? `<ul class="mb-0 mt-2">${
+            reviewReasons.map(reason => `
+                <li class="mb-2">
+                    <strong>${escapeHtml(reason)}</strong>
+                    <div class="small">${escapeHtml(
+                        reasonDescriptions[reason] ??
+                        "This signal requires further inspection."
+                    )}</div>
+                </li>
+            `).join("")
+        }</ul>`
+        : `<p class="mb-0 mt-2">No review triggers were returned by the decision engine.</p>`;
+
+    const alternativeCategory = result.best_alternative_category
+        ? escapeHtml(result.best_alternative_category.replaceAll("_", " "))
+        : "None identified";
+
+    const alternativeSupport =
+        Number.isFinite(Number(result.best_alternative_support))
+            ? Number(result.best_alternative_support).toFixed(4)
+            : "N/A";
 
     resultSection.innerHTML = `
-
         <div class="card-body p-4">
-
-            <span class="badge bg-success mb-3">
+            <span class="badge ${reviewRequired ? "bg-warning text-dark" : "bg-success"} mb-3">
                 AI Analysis Complete
             </span>
 
-            <h4 class="fw-bold mb-4">
-                AI Product Assessment
-            </h4>
+            <h4 class="fw-bold mb-4">AI Product Assessment</h4>
 
-            <div class="row g-4">
-
+            <div class="row g-3">
                 <div class="col-md-4">
-
-                    <div class="border rounded p-3">
-
-                        <small class="text-muted">
-                            Predicted Category
-                        </small>
-
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted">Predicted Category</small>
                         <h5 class="fw-bold mt-2 mb-0">
-                            ${result.category.replaceAll("_", " ")}
+                            ${escapeHtml(String(result.category ?? "Unknown").replaceAll("_", " "))}
                         </h5>
-
                     </div>
-
                 </div>
 
-
                 <div class="col-md-4">
-
-                    <div class="border rounded p-3">
-
-                        <small class="text-muted">
-                            Prediction Confidence
-                        </small>
-
-                        <h5 class="fw-bold mt-2 mb-0">
-                            ${confidence}%
-                        </h5>
-
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted">Prediction Confidence</small>
+                        <h5 class="fw-bold mt-2 mb-0">${confidence}%</h5>
                     </div>
-
                 </div>
 
-
                 <div class="col-md-4">
-
-                    <div class="border rounded p-3">
-
-                        <small class="text-muted">
-                            Imageâ€“Text Similarity
-                        </small>
-
-                        <h5 class="fw-bold mt-2 mb-0">
-                            ${similarity}
-                        </h5>
-
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted">Image–Text Similarity</small>
+                        <h5 class="fw-bold mt-2 mb-0">${similarity}</h5>
                     </div>
-
                 </div>
 
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted">Duplicate Similarity Score</small>
+                        <h5 class="fw-bold mt-2 mb-0">${duplicateScore}</h5>
+                        <small class="text-muted">Review threshold: above 0.90</small>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted">Taxonomy Status</small>
+                        <h5 class="fw-bold mt-2 mb-0">${escapeHtml(result.taxonomy_status ?? "N/A")}</h5>
+                        <small class="text-muted">Support: ${taxonomySupport} · Margin: ${taxonomyMargin}</small>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <small class="text-muted">Best Alternative Category</small>
+                        <h6 class="fw-bold mt-2 mb-1">${alternativeCategory}</h6>
+                        <small class="text-muted">Alternative support: ${alternativeSupport}</small>
+                    </div>
+                </div>
             </div>
 
-
-            <div class="alert ${
-                reviewRequired
-                    ? "alert-warning"
-                    : "alert-success"
-            } mt-4 mb-0">
-
+            <div class="alert ${reviewRequired ? "alert-warning" : decision === "PASS" ? "alert-success" : "alert-secondary"} mt-4 mb-0">
                 <strong>
                     ${reviewRequired
-                        ? "Manual Review Required"
-                        : "Ready for Seller Review"
-                    }
+                        ? "Human Review Required"
+                        : decision === "PASS"
+                            ? "Passed Automated Review Checks"
+                            : "Decision Status Unavailable"}
                 </strong>
 
                 <div class="small mt-1">
-
-                    ${
-                        result.mismatch
-                            ? "The product image and title may not be consistent."
-                            : "No image-title mismatch was detected."
-                    }
-
+                    ${reviewRequired
+                        ? "One or more decision rules require human inspection. Review the evidence below."
+                        : decision === "PASS"
+                            ? "No configured review triggers were detected. This does not guarantee that the prediction is correct."
+                            : "The backend did not return a recognized decision. Verify the result before proceeding."}
                 </div>
 
-            </div>
+                <hr>
 
+                <strong>Decision Explanation</strong>
+                ${reasonsHtml}
+            </div>
         </div>
 
         <div class="mt-4">
@@ -313,7 +359,6 @@ function displayAIResult(result) {
                 Submit Product to Catalog
             </button>
         </div>
-
     `;
 
 }

@@ -19,6 +19,8 @@ const uploadSection = document.getElementById("uploadSection");
 
 const categorySelect = document.getElementById("categorySelect");
 const productSelect = document.getElementById("productSelect");
+const productSearch = document.getElementById("productSearch");
+let catalogProducts = [];
 
 const imageInput = document.getElementById("image");
 const preview = document.getElementById("preview");
@@ -80,6 +82,16 @@ document.getElementById("similarCount");
 
 const analysisSection =
 document.getElementById("analysisSection");
+
+// Explainable AI Assessment
+const xaiDecision = document.getElementById("xaiDecision");
+const xaiTaxonomyStatus = document.getElementById("xaiTaxonomyStatus");
+const xaiTaxonomySupport = document.getElementById("xaiTaxonomySupport");
+const xaiTaxonomyMargin = document.getElementById("xaiTaxonomyMargin");
+const xaiDuplicateScore = document.getElementById("xaiDuplicateScore");
+const xaiAlternativeCategory = document.getElementById("xaiAlternativeCategory");
+const xaiAlternativeSupport = document.getElementById("xaiAlternativeSupport");
+const xaiReviewReasons = document.getElementById("xaiReviewReasons");
 
 // -----------------------------------------------------
 // Global Variables
@@ -166,51 +178,68 @@ async function loadCategories() {
 // Load Products
 // -----------------------------------------------------
 
-categorySelect.addEventListener("change", async ()=>{
-
-    productSelect.disabled = true;
-
-    productSelect.innerHTML =
-    `<option>Loading...</option>`;
-
-    selectedProduct = null;
-
-    if(categorySelect.value==="")
-        return;
-
-    const response =
-    await fetch(
-
-        `${FLASK_URL}/products/${categorySelect.value}`
-
+function renderProductOptions(searchText = "") {
+    const query = searchText.trim().toLowerCase();
+    const filteredProducts = catalogProducts.filter(product =>
+        (product.title || "").toLowerCase().includes(query)
     );
 
-    const products =
-    await response.json();
+    productSelect.innerHTML = "";
 
-    productSelect.innerHTML =
-    `<option value="">Select Product</option>`;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = filteredProducts.length
+        ? "Select Product"
+        : "No matching products";
+    productSelect.appendChild(placeholder);
 
-    products.forEach(product=>{
-
-        const option =
-        document.createElement("option");
-
-        option.value =
-        JSON.stringify(product);
-
-        option.textContent =
-        product.title;
-
+    filteredProducts.forEach(product => {
+        const option = document.createElement("option");
+        option.value = JSON.stringify(product);
+        option.textContent = product.title;
         productSelect.appendChild(option);
-
     });
 
-    productSelect.disabled = false;
+    productSelect.disabled = catalogProducts.length === 0;
+}
 
+categorySelect.addEventListener("change", async () => {
+    productSelect.disabled = true;
+    productSearch.disabled = true;
+    productSearch.value = "";
+    productSelect.innerHTML = '<option value="">Loading...</option>';
+    catalogProducts = [];
+    selectedProduct = null;
+
+    if (categorySelect.value === "") {
+        productSelect.innerHTML = '<option value="">Select Product</option>';
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${FLASK_URL}/products/${categorySelect.value}`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Product request failed: ${response.status}`);
+        }
+
+        catalogProducts = await response.json();
+        renderProductOptions();
+        productSearch.disabled = false;
+    } catch (error) {
+        console.error("Unable to load catalog products:", error);
+        productSelect.innerHTML = '<option value="">Error loading products</option>';
+        productSelect.disabled = true;
+    }
 });
 
-// -----------------------------------------------------
+productSearch.addEventListener("input", () => {
+    selectedProduct = null;
+    renderProductOptions(productSearch.value);
+});
+
 // Product Selected
 // -----------------------------------------------------
 
@@ -515,42 +544,118 @@ function renderDashboard(prediction, duplicates) {
     similarityScore.textContent =
         prediction.image_title_similarity.toFixed(4);
 
+        // Use the backend decision instead of duplicating its rules.
+    const decision = String(prediction.decision ?? "UNKNOWN").toUpperCase();
+    const reviewRequired = decision === "REVIEW";
+
+    const formatScore = value => {
+        if (value === null || value === undefined || value === "") {
+            return "N/A";
+        }
+
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toFixed(4) : "N/A";
+    };
+
+    const displayText = value =>
+        value === null || value === undefined || value === ""
+            ? "N/A"
+            : String(value).replaceAll("_", " ");
+
     reviewStatus.innerHTML =
+        decision === "REVIEW"
+            ? "<span class='text-danger fw-bold'>Required</span>"
+            : decision === "PASS"
+                ? "<span class='text-success fw-bold'>Not Required</span>"
+                : "<span class='text-secondary fw-bold'>Unavailable</span>";
 
-        prediction.mismatch || prediction.confidence < 0.70
-
-        ? "<span class='text-danger fw-bold'>Required</span>"
-
-        : "<span class='text-success fw-bold'>Not Required</span>";
-
-    //------------------------------------------------
     // Validation Table
-    //------------------------------------------------
-
     summaryCategory.textContent =
-        prediction.category.replaceAll("_"," ");
+        displayText(prediction.category);
 
     summaryConfidence.textContent =
-        (prediction.confidence * 100).toFixed(1) + "%";
+        (Number(prediction.confidence) * 100).toFixed(1) + "%";
 
     summaryMatch.innerHTML =
-
         prediction.mismatch
-
-        ? "<span class='text-danger'>Mismatch</span>"
-
-        : "<span class='text-success'>Match</span>";
+            ? "<span class='text-danger'>Mismatch</span>"
+            : "<span class='text-success'>Match</span>";
 
     summaryReview.innerHTML =
-
-        prediction.mismatch || prediction.confidence < 0.70
-
-        ? "<span class='text-danger fw-bold'>Required</span>"
-
-        : "<span class='text-success fw-bold'>Not Required</span>";
+        decision === "REVIEW"
+            ? "<span class='text-danger fw-bold'>Required</span>"
+            : decision === "PASS"
+                ? "<span class='text-success fw-bold'>Not Required</span>"
+                : "<span class='text-secondary fw-bold'>Unavailable</span>";
 
     summarySimilarity.textContent =
-        prediction.image_title_similarity.toFixed(4);
+        formatScore(prediction.image_title_similarity);
+
+    // Explainable AI Assessment
+    xaiDecision.textContent = decision;
+    xaiTaxonomyStatus.textContent =
+        displayText(prediction.taxonomy_status);
+
+    xaiTaxonomySupport.textContent =
+        formatScore(prediction.taxonomy_support);
+
+    xaiTaxonomyMargin.textContent =
+        formatScore(prediction.taxonomy_margin);
+
+    xaiDuplicateScore.textContent =
+        formatScore(prediction.duplicate_score);
+
+    xaiAlternativeCategory.textContent =
+        displayText(prediction.best_alternative_category);
+
+    xaiAlternativeSupport.textContent =
+        "Alternative support: " +
+        formatScore(prediction.best_alternative_support);
+
+    xaiReviewReasons.innerHTML = "";
+
+    const reasons = Array.isArray(prediction.review_reasons)
+        ? prediction.review_reasons
+        : [];
+
+    const reasonDescriptions = {
+        "Low Confidence":
+            "Prediction confidence is below the configured 70% threshold.",
+        "Image-Text Mismatch":
+            "The product image and title may describe different things.",
+        "Taxonomy Uncertainty":
+            "Taxonomy validation requires review. Check confidence, support margin, and image-text consistency.",
+        "Possible Duplicate":
+            "The decision engine's duplicate similarity score is above 0.90."
+    };
+
+    if (reasons.length > 0) {
+        reasons.forEach(reason => {
+            const item = document.createElement("li");
+            const heading = document.createElement("strong");
+            heading.textContent = reason;
+
+            item.appendChild(heading);
+
+            const description = document.createElement("div");
+            description.className = "small";
+            description.textContent =
+                reasonDescriptions[reason] ??
+                "This signal requires further inspection.";
+
+            item.appendChild(description);
+            xaiReviewReasons.appendChild(item);
+        });
+    } else {
+        const item = document.createElement("li");
+
+        item.textContent =
+            decision === "PASS"
+                ? "No configured review triggers were detected. This does not guarantee that the prediction is correct."
+                : "The backend did not return review reasons for a recognized decision.";
+
+        xaiReviewReasons.appendChild(item);
+    }
 
     //------------------------------------------------
     // Similar Product Cards
@@ -660,4 +765,64 @@ function renderDashboard(prediction, duplicates) {
     });
 
 }
+
+
+// Dashboard tab navigation: only controls which existing panel is visible.
+(function initializeAnalysisTabs() {
+    const tabs = document.querySelectorAll("[data-analysis-tab]");
+    const panels = {
+        overview: document.getElementById("overviewPanel"),
+        evidence: document.getElementById("evidencePanel"),
+        similar: document.getElementById("similarPanel"),
+        details: document.getElementById("detailsPanel")
+    };
+
+    if (!tabs.length || Object.values(panels).some(panel => !panel)) {
+        console.warn("Dashboard tabs were not initialized: a tab or panel is missing.");
+        return;
+    }
+
+    function activateTab(name) {
+        tabs.forEach(tab => {
+            const selected = tab.dataset.analysisTab === name;
+            tab.classList.toggle("active", selected);
+            tab.setAttribute("aria-selected", String(selected));
+            tab.setAttribute("tabindex", selected ? "0" : "-1");
+        });
+
+        Object.entries(panels).forEach(([panelName, panel]) => {
+            panel.hidden = panelName !== name;
+        });
+    }
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => {
+            activateTab(tab.dataset.analysisTab);
+        });
+
+        tab.addEventListener("keydown", event => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+                return;
+            }
+
+            event.preventDefault();
+
+            let nextIndex = index;
+            if (event.key === "ArrowRight") {
+                nextIndex = (index + 1) % tabs.length;
+            } else if (event.key === "ArrowLeft") {
+                nextIndex = (index - 1 + tabs.length) % tabs.length;
+            } else if (event.key === "Home") {
+                nextIndex = 0;
+            } else if (event.key === "End") {
+                nextIndex = tabs.length - 1;
+            }
+
+            tabs[nextIndex].focus();
+            activateTab(tabs[nextIndex].dataset.analysisTab);
+        });
+    });
+
+    activateTab("overview");
+})();
 

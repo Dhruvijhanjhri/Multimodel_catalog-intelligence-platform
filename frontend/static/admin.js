@@ -353,18 +353,48 @@ async function loadCharts() {
             },
 
             options: {
-
                 responsive: true,
-
-                maintainAspectRatio: false
-
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Products: ${context.parsed.y.toLocaleString()}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Product Category"
+                        },
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: "Number of Products"
+                        },
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
             }
 
         }
 
     );
-
-    //------------------------------------------------
 
     //-----------------------------------
     // Review Queue Chart
@@ -412,11 +442,35 @@ async function loadCharts() {
                 },
 
                 options: {
-
                     responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: "bottom",
+                            labels: {
+                                padding: 16,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const values = context.dataset.data;
+                                    const total = values.reduce(
+                                        (sum, value) => sum + value,
+                                        0
+                                    );
+                                    const count = context.parsed;
+                                    const percentage = total > 0
+                                        ? ((count / total) * 100).toFixed(1)
+                                        : "0.0";
 
-                    maintainAspectRatio: false
-
+                                    return `${context.label}: ${count} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
                 }
 
             }

@@ -213,6 +213,15 @@
 
                 </label>
 
+                <input
+                    id="productSearch"
+                    type="search"
+                    class="form-control mb-2"
+                    placeholder="Search products by name..."
+                    autocomplete="off"
+                    aria-label="Search catalog products"
+                    disabled>
+
                 <select
                     id="productSelect"
                     class="form-select"
@@ -381,6 +390,53 @@
     id="analysisSection"
     style="display:none;">
 
+    <!-- DASHBOARD TABS -->
+    <div class="dashboard-tabs card border-0 shadow-sm mt-4 mb-3">
+        <div class="card-body p-2">
+            <div class="nav nav-pills dashboard-tab-list" id="analysisTabs" role="tablist">
+
+                <button class="nav-link active"
+                        id="overviewTab"
+                        type="button"
+                        role="tab"
+                        aria-selected="true"
+                        data-analysis-tab="overview">
+                    <span class="tab-label">Overview</span>
+                </button>
+
+                <button class="nav-link"
+                        id="evidenceTab"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-analysis-tab="evidence">
+                    <span class="tab-label">AI Evidence</span>
+                </button>
+
+                <button class="nav-link"
+                        id="similarTab"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-analysis-tab="similar">
+                    <span class="tab-label">Similar Products</span>
+                </button>
+
+                <button class="nav-link"
+                        id="detailsTab"
+                        type="button"
+                        role="tab"
+                        aria-selected="false"
+                        data-analysis-tab="details">
+                    <span class="tab-label">Detailed Results</span>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+
+<div class="analysis-tab-panel" id="overviewPanel" role="tabpanel">
 <div class="card shadow border-0 mt-5">
 
 <div class="card-body">
@@ -597,6 +653,92 @@ Similarity Score
 </div>
 
 <!-- ===================================================== -->
+
+</div>
+
+<div class="analysis-tab-panel" id="evidencePanel" role="tabpanel" hidden>
+<!-- EXPLAINABLE AI ASSESSMENT -->
+<!-- ===================================================== -->
+
+<div class="card shadow border-0 mt-4" id="explainabilityCard">
+
+    <div class="card-body">
+
+        <h3 class="mb-3">Explainable AI Assessment</h3>
+
+        <p class="text-muted">
+            Review the evidence behind the model prediction and the
+            backend decision. Similarity scores are supporting signals,
+            not proof of a duplicate or a correct prediction.
+        </p>
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <small class="text-muted">Backend Decision</small>
+                    <h5 id="xaiDecision" class="mt-2 mb-0">--</h5>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <small class="text-muted">Taxonomy Status</small>
+                    <h5 id="xaiTaxonomyStatus" class="mt-2 mb-0">--</h5>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <small class="text-muted">Catalog Support</small>
+                    <h5 id="xaiTaxonomySupport" class="mt-2 mb-0">--</h5>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <small class="text-muted">Taxonomy Support Margin</small>
+                    <h5 id="xaiTaxonomyMargin" class="mt-2 mb-0">--</h5>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <small class="text-muted">Decision-Engine Duplicate Score</small>
+                    <h5 id="xaiDuplicateScore" class="mt-2 mb-0">--</h5>
+                    <small class="text-muted">
+                        Review threshold: above 0.90
+                    </small>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <small class="text-muted">Best Alternative Category</small>
+                    <h5 id="xaiAlternativeCategory" class="mt-2 mb-0">--</h5>
+                    <small id="xaiAlternativeSupport" class="text-muted">
+                        Alternative support: --
+                    </small>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="alert alert-secondary mt-4 mb-0">
+            <h6 class="fw-bold">Why this decision?</h6>
+            <ul id="xaiReviewReasons" class="mb-0">
+                <li>Run an analysis to see the decision explanation.</li>
+            </ul>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===================================================== -->
+</div>
+
+<div class="analysis-tab-panel" id="similarPanel" role="tabpanel" hidden>
 <!-- SIMILAR PRODUCTS -->
 <!-- ===================================================== -->
 
@@ -637,6 +779,9 @@ No similar products available.
 </div>
 
 <!-- ===================================================== -->
+</div>
+
+<div class="analysis-tab-panel" id="detailsPanel" role="tabpanel" hidden>
 <!-- DUPLICATE TABLE -->
 <!-- ===================================================== -->
 
@@ -704,6 +849,9 @@ No results
 
 </div>
 <!-- ===================================================== -->
+</div>
+
+</div>
 <!-- FOOTER -->
 <!-- ===================================================== -->
 
