@@ -112,7 +112,15 @@ scripts/inspect_classifier_baseline.py
 # Local active learning generated data
 data/active_learning/
 
-# ==========================
-# Local Backup Files
-# ==========================
+# Local backup files
 *.bak
+*.bak_*
+
+# Local one-time modification scripts
+/add_dashboard_tabs.py
+/add_product_search_field.py
+/add_product_search_filter.py
+/fix_dashboard_tab_order.py
+
+# Local product review artifact
+/product_review_comparison.html

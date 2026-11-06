@@ -230,29 +230,60 @@ document.addEventListener("click", async (e) => {
     }
 });
 
+
 document.addEventListener("click", async (e) => {
     const button = e.target.closest(".rejectBtn");
     if (!button) return;
 
     const id = button.dataset.id;
+
     const rejectModal = new bootstrap.Modal(
         document.getElementById("rejectReviewModal")
     );
 
+    const reasonSelect = document.getElementById("reviewReason");
     const categorySelect = document.getElementById("correctedCategory");
+    const categoryGroup = document.getElementById("correctedCategoryGroup");
     const feedbackInput = document.getElementById("reviewerFeedback");
     const confirmRejectBtn = document.getElementById("confirmRejectBtn");
 
+    // Reset fields whenever the modal opens
+    reasonSelect.value = "";
     categorySelect.value = "";
     feedbackInput.value = "";
+
+    categoryGroup.style.display = "none";
+    categorySelect.required = false;
+
+    // Show corrected category only for incorrect AI category
+    reasonSelect.onchange = () => {
+        const requiresCategory =
+            reasonSelect.value === "incorrect_ai_category";
+
+        categoryGroup.style.display = requiresCategory ? "" : "none";
+        categorySelect.required = requiresCategory;
+
+        if (!requiresCategory) {
+            categorySelect.value = "";
+        }
+    };
 
     confirmRejectBtn.onclick = async () => {
         if (confirmRejectBtn.disabled) return;
 
+        const reviewReason = reasonSelect.value;
         const selectedCategory = categorySelect.value;
         const feedback = feedbackInput.value;
 
-        if (!selectedCategory) {
+        if (!reviewReason) {
+            alert("Please select a review reason.");
+            return;
+        }
+
+        if (
+            reviewReason === "incorrect_ai_category" &&
+            !selectedCategory
+        ) {
             alert("Please select a corrected category.");
             return;
         }
@@ -262,19 +293,25 @@ document.addEventListener("click", async (e) => {
 
         try {
             const params = new URLSearchParams({
-                corrected_category: selectedCategory,
+                review_reason: reviewReason,
                 feedback: feedback
             });
+
+            if (reviewReason === "incorrect_ai_category") {
+                params.set("corrected_category", selectedCategory);
+            }
 
             const response = await fetch(
                 `${API}/review-queue/${id}/reject?${params}`,
                 { method: "PUT" }
             );
+
             const data = await readApiResponse(response);
 
             alert(data.message || "Review rejected successfully.");
             rejectModal.hide();
             await loadDashboard();
+
         } catch (error) {
             alert(`Could not reject review: ${error.message}`);
         } finally {
@@ -285,6 +322,7 @@ document.addEventListener("click", async (e) => {
 
     rejectModal.show();
 });
+
 
 document.addEventListener("click", async (e) => {
     const button = e.target.closest(".deleteBtn");

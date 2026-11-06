@@ -27,40 +27,46 @@
 
 <div class="container-fluid py-5 px-5">
 
+
 <!-- ===================================================== -->
 <!-- HEADER -->
 <!-- ===================================================== -->
 
-<div class="d-flex justify-content-between align-items-center mb-5">
+<header class="ci-header d-flex justify-content-between align-items-center mb-4">
 
-    <div>
-
-        <h1 class="display-5 fw-bold text-primary mb-1">
+    <div class="ci-brand">
+        <h1 class="display-5 fw-bold text-primary mb-2">
             Enterprise Catalog Intelligence
         </h1>
 
-        <p class="text-muted mb-0">
-            AI-powered Multimodal Product Intelligence Platform
+        <p class="text-muted mb-2">
+            Multimodal AI analysis for product catalogs
         </p>
 
-        <small class="text-secondary">
-            OpenCLIP • FastAPI • FAISS • PyTorch
-        </small>
-
+        <div class="ci-tech-stack">
+            <span>OpenCLIP</span>
+            <span>FastAPI</span>
+            <span>FAISS</span>
+            <span>PyTorch</span>
+        </div>
     </div>
 
-    <div>
+    <nav class="ci-header-actions d-flex flex-wrap align-items-center gap-2"
+         aria-label="Platform navigation">
 
-        <a href="/admin"
-           class="btn btn-outline-primary px-4">
-
-            📊 Admin Dashboard
-
+        <a href="/seller" class="btn btn-outline-primary">
+            Seller Portal
         </a>
 
-    </div>
+        <a href="/admin" class="btn btn-outline-primary">
+            Admin Dashboard
+        </a>
 
-</div>
+    </nav>
+
+</header>
+
+<hr class="mb-5">
 
 <hr class="mb-5">
 
@@ -68,92 +74,96 @@
 <!-- HERO -->
 <!-- ===================================================== -->
 
-<div class="row align-items-center mb-5">
+<section class="ci-hero row align-items-center g-4 mb-5">
 
     <div class="col-lg-7">
 
-        <h2 class="fw-bold mb-3">
-            AI-powered Product Catalog Intelligence
+        <span class="ci-eyebrow">PRODUCT INTELLIGENCE WORKSPACE</span>
+
+        <h2 class="ci-hero-title fw-bold mt-3 mb-3">
+            Understand your catalog.
+            <span>Make smarter product decisions.</span>
         </h2>
 
-        <p class="text-muted fs-5">
-
-            Classify products using multimodal AI, validate image-title
-            consistency, detect duplicate listings, retrieve similar products,
-            and automatically flag suspicious catalog entries for manual review.
-
+        <p class="ci-hero-description text-muted">
+            Analyze product images and titles with multimodal AI.
+            Identify product categories, validate image–text consistency,
+            discover similar listings, and flag products that need human review.
         </p>
 
-        <div class="mt-4">
+        <div class="ci-hero-actions d-flex flex-wrap gap-3 mt-4">
 
             <button
                 id="catalogHeroBtn"
-                class="btn btn-primary">
+                class="btn btn-primary px-4">
 
                 Analyze Existing Catalog
-
             </button>
 
             <button
                 id="uploadHeroBtn"
-                class="btn btn-outline-primary">
+                class="btn btn-outline-primary px-4">
 
                 Analyze New Product
-
             </button>
 
         </div>
+
+        <p class="ci-helper-text text-muted mt-3 mb-0">
+            Choose an existing catalog item or upload a new product image to begin.
+        </p>
 
     </div>
 
     <div class="col-lg-5">
 
-        <div class="card shadow-sm border-0">
+        <div class="card ci-capability-card border-0">
 
             <div class="card-body">
 
-                <h5 class="fw-bold mb-4">
-                    Platform Capabilities
-                </h5>
-
-                <div class="mb-3">
-
-                    <strong>Product Classification</strong>
-
-                    <p class="text-muted small mb-0">
-                        Multimodal category prediction using OpenCLIP.
-                    </p>
-
+                <div class="mb-4">
+                    <span class="ci-eyebrow">WHAT THE AI ENGINE DOES</span>
+                    <h5 class="fw-bold mt-2 mb-0">Platform Capabilities</h5>
                 </div>
 
-                <div class="mb-3">
-
-                    <strong>Duplicate Detection</strong>
-
-                    <p class="text-muted small mb-0">
-                        Semantic similarity search powered by FAISS.
-                    </p>
-
+                <div class="ci-capability-item">
+                    <div class="ci-capability-number">01</div>
+                    <div>
+                        <strong>Product Classification</strong>
+                        <p class="text-muted small mb-0">
+                            Predict product categories using OpenCLIP.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-
-                    <strong>Image–Text Validation</strong>
-
-                    <p class="text-muted small mb-0">
-                        Detect mismatched product listings.
-                    </p>
-
+                <div class="ci-capability-item">
+                    <div class="ci-capability-number">02</div>
+                    <div>
+                        <strong>Duplicate Detection</strong>
+                        <p class="text-muted small mb-0">
+                            Find semantically similar catalog listings with FAISS.
+                        </p>
+                    </div>
                 </div>
 
-                <div>
+                <div class="ci-capability-item">
+                    <div class="ci-capability-number">03</div>
+                    <div>
+                        <strong>Image–Text Validation</strong>
+                        <p class="text-muted small mb-0">
+                            Check whether product images match their titles.
+                        </p>
+                    </div>
+                </div>
 
-                    <strong>Review Queue</strong>
-
-                    <p class="text-muted small mb-0">
-                        Automatically flag products requiring manual review.
-                    </p>
-
+                <div class="ci-capability-item">
+                    <div class="ci-capability-number">04</div>
+                    <div>
+                        <strong>Human Review Signals</strong>
+                        <p class="text-muted small mb-0">
+                            Flag uncertain or suspicious listings for review.
+                        </p>
+                    </div>
                 </div>
 
             </div>
@@ -162,55 +172,45 @@
 
     </div>
 
-</div>
+</section>
 
 <!-- ===================================================== -->
 <!-- CATALOG SECTION -->
 <!-- ===================================================== -->
 
-<div
+<section
     id="catalogSection"
-    class="card shadow-sm border-0 mb-4"
+    class="card ci-workspace-card border-0 mb-4"
     style="display:none;">
 
     <div class="card-body">
 
-        <h4 class="mb-4">
+        <div class="ci-section-heading mb-4">
+            <span class="ci-eyebrow">EXISTING CATALOG</span>
+            <h4 class="fw-bold mt-2 mb-1">Select a Product to Analyze</h4>
+            <p class="text-muted mb-0">
+                Choose a category and product from your existing catalog.
+            </p>
+        </div>
 
-            Catalog Selection
+        <div class="row g-3">
 
-        </h4>
+            <div class="col-md-6">
 
-        <div class="row">
-
-            <div class="col-md-6 mb-3">
-
-                <label class="form-label">
-
-                    Category
-
+                <label for="categorySelect" class="form-label">
+                    Product Category
                 </label>
 
-                <select
-                    id="categorySelect"
-                    class="form-select">
-
-                    <option value="">
-
-                        Select Category
-
-                    </option>
-
+                <select id="categorySelect" class="form-select">
+                    <option value="">Select Category</option>
                 </select>
 
             </div>
 
-            <div class="col-md-6 mb-3">
+            <div class="col-md-6">
 
-                <label class="form-label">
-
-                    Product
-
+                <label for="productSearch" class="form-label">
+                    Find a Product
                 </label>
 
                 <input
@@ -227,11 +227,7 @@
                     class="form-select"
                     disabled>
 
-                    <option value="">
-
-                        Select Product
-
-                    </option>
+                    <option value="">Select Product</option>
 
                 </select>
 
@@ -239,15 +235,18 @@
 
         </div>
 
-        <input
-            type="hidden"
-            id="catalogImage">
+        <input type="hidden" id="catalogImage">
 
-        <div class="text-center mt-4">
+        <div class="ci-preview-area text-center mt-4">
+
+            <p class="text-muted small mb-2">
+                Selected product preview
+            </p>
 
             <img
                 id="catalogPreview"
-                class="img-fluid rounded shadow-sm"
+                class="img-fluid rounded"
+                alt="Selected catalog product preview"
                 style="
                     display:none;
                     max-height:260px;
@@ -256,11 +255,11 @@
 
         </div>
 
-        <div class="d-grid mt-4">
+        <div class="d-flex justify-content-end mt-4">
 
             <button
                 id="catalogAnalyzeBtn"
-                class="btn btn-primary btn-lg"
+                class="btn btn-primary px-4"
                 type="button">
 
                 Analyze Catalog Product
@@ -271,47 +270,57 @@
 
     </div>
 
-</div>
+</section>
 
 <!-- ===================================================== -->
 <!-- UPLOAD SECTION -->
 <!-- ===================================================== -->
 
-<div
+<section
     id="uploadSection"
-    class="card shadow-sm border-0 mb-4"
+    class="card ci-workspace-card border-0 mb-4"
     style="display:none;">
 
     <div class="card-body">
 
-        <h4 class="mb-4">
-
-            Upload New Product
-
-        </h4>
+        <div class="ci-section-heading mb-4">
+            <span class="ci-eyebrow">NEW PRODUCT</span>
+            <h4 class="fw-bold mt-2 mb-1">Analyze a New Product</h4>
+            <p class="text-muted mb-0">
+                Upload a product image and provide its title for AI-powered analysis.
+            </p>
+        </div>
 
         <form id="predictForm">
 
             <div class="mb-4">
 
-                <label class="form-label">
-
+                <label for="image" class="form-label fw-semibold">
                     Product Image
-
                 </label>
 
                 <input
                     type="file"
                     id="image"
-                    class="form-control">
+                    class="form-control"
+                    accept="image/*">
+
+                <div class="form-text">
+                    Select a clear product image. Supported image formats depend on the server.
+                </div>
 
             </div>
 
-            <div class="text-center mb-4">
+            <div class="ci-preview-area text-center mb-4">
+
+                <p class="text-muted small mb-2">
+                    Image preview
+                </p>
 
                 <img
                     id="preview"
-                    class="img-fluid rounded shadow-sm"
+                    class="img-fluid rounded"
+                    alt="Uploaded product image preview"
                     style="
                         display:none;
                         max-height:280px;
@@ -320,26 +329,29 @@
 
             </div>
 
-            <div class="mb-3">
+            <div class="mb-4">
 
-                <label class="form-label">
-
+                <label for="title" class="form-label fw-semibold">
                     Product Title
-
                 </label>
 
                 <textarea
                     id="title"
-                    rows="4"
-                    class="form-control"></textarea>
+                    rows="3"
+                    class="form-control"
+                    placeholder="Enter a descriptive product title..."></textarea>
+
+                <div class="form-text">
+                    Add an accurate title describing the product shown in the image.
+                </div>
 
             </div>
 
-            <div class="d-grid">
+            <div class="d-flex justify-content-end">
 
                 <button
                     id="uploadAnalyzeBtn"
-                    class="btn btn-primary btn-lg"
+                    class="btn btn-primary px-4"
                     type="submit">
 
                     Analyze Product
@@ -352,33 +364,56 @@
 
     </div>
 
-</div>
+</section>
 
 <!-- ===================================================== -->
-<!-- RESULTS SECTION -->
+<!-- RESULTS EMPTY STATE -->
 <!-- ===================================================== -->
 
 <div id="result">
-    <div class="card border-0 shadow-sm">
 
-    <div class="card-body text-center py-5">
+    <div class="card ci-empty-state border-0">
 
-        <h3 class="text-secondary">
+        <div class="card-body text-center py-5 px-4">
 
-            Select a catalog product or upload a new product to begin analysis
+            <span class="ci-eyebrow">ANALYSIS WORKSPACE</span>
 
-        </h3>
+            <h4 class="fw-bold mt-3 mb-2">
+                Your product insights will appear here
+            </h4>
 
-        <p class="text-muted mb-0">
+            <p class="text-muted mx-auto mb-4" style="max-width:600px;">
+                Select a product from your existing catalog or upload a new one.
+                The AI engine will evaluate its category, image-title consistency,
+                duplicate matches, and review requirements.
+            </p>
 
-            The AI engine will classify the product, validate image-title consistency,
-            detect duplicates and recommend similar products.
+            <div class="ci-analysis-flow">
 
-        </p>
+                <div class="ci-flow-step">
+                    <span class="ci-flow-number">01</span>
+                    <span>Select Product</span>
+                </div>
+
+                <span class="ci-flow-arrow" aria-hidden="true">&rarr;</span>
+
+                <div class="ci-flow-step">
+                    <span class="ci-flow-number">02</span>
+                    <span>Run AI Analysis</span>
+                </div>
+
+                <span class="ci-flow-arrow" aria-hidden="true">&rarr;</span>
+
+                <div class="ci-flow-step">
+                    <span class="ci-flow-number">03</span>
+                    <span>Review Insights</span>
+                </div>
+
+            </div>
+
+        </div>
 
     </div>
-
-</div>
 
 </div>
 
@@ -436,223 +471,119 @@
     </div>
 
 
+<!-- OVERVIEW PANEL -->
 <div class="analysis-tab-panel" id="overviewPanel" role="tabpanel">
-<div class="card shadow border-0 mt-5">
 
-<div class="card-body">
+    <!-- ANALYSIS SUMMARY -->
+    <section class="card ci-dashboard-card border-0 mt-4">
+
+        <div class="card-body">
+
+            <div class="ci-section-heading mb-4">
+                <span class="ci-eyebrow">ANALYSIS AT A GLANCE</span>
+                <h3 class="fw-bold mt-2 mb-1">Analysis Summary</h3>
+                <p class="text-muted mb-0">
+                    Key signals generated by the product intelligence engine.
+                </p>
+            </div>
 
-<h3 class="mb-4">
+            <div class="row g-3">
 
-Analysis Summary
+                <div class="col-lg-3 col-md-6">
+                    <div class="metric-card ci-metric-card h-100">
+                        <span class="ci-metric-label">Predicted Category</span>
+                        <h3 id="predictedCategory">--</h3>
+                    </div>
+                </div>
 
-</h3>
+                <div class="col-lg-3 col-md-6">
+                    <div class="metric-card ci-metric-card h-100">
+                        <span class="ci-metric-label">Confidence</span>
+                        <h3 id="predictionConfidence">--</h3>
 
-<div class="row g-4">
+                        <div class="progress ci-confidence-progress mt-3">
+                            <div
+                                id="confidenceBar"
+                                class="progress-bar bg-primary"
+                                style="width:0%;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<div class="col-lg-3 col-md-6">
+                <div class="col-lg-3 col-md-6">
+                    <div class="metric-card ci-metric-card h-100">
+                        <span class="ci-metric-label">Image-Text Similarity</span>
+                        <h3 id="similarityScore">--</h3>
+                    </div>
+                </div>
 
-<div class="metric-card">
+                <div class="col-lg-3 col-md-6">
+                    <div class="metric-card ci-metric-card h-100">
+                        <span class="ci-metric-label">Review Decision</span>
+                        <h3 id="reviewStatus">--</h3>
+                    </div>
+                </div>
 
-<h6>
+            </div>
 
-Predicted Category
+        </div>
 
-</h6>
+    </section>
 
-<h3 id="predictedCategory">
+    <!-- AI VALIDATION -->
+    <section class="card ci-dashboard-card border-0 mt-4">
 
---
+        <div class="card-body">
 
-</h3>
+            <div class="ci-section-heading mb-4">
+                <span class="ci-eyebrow">MODEL OUTPUT</span>
+                <h3 class="fw-bold mt-2 mb-1">AI Validation</h3>
+                <p class="text-muted mb-0">
+                    A consolidated view of the model's classification and validation signals.
+                </p>
+            </div>
 
-</div>
+            <div class="table-responsive">
 
-</div>
+                <table class="table ci-validation-table align-middle mb-0">
 
-<div class="col-lg-3 col-md-6">
+                    <tbody>
 
-<div class="metric-card">
+                        <tr>
+                            <th scope="row">Predicted Category</th>
+                            <td id="summaryCategory">--</td>
+                        </tr>
 
-<h6>
+                        <tr>
+                            <th scope="row">Prediction Confidence</th>
+                            <td id="summaryConfidence">--</td>
+                        </tr>
 
-Confidence
+                        <tr>
+                            <th scope="row">Image-Text Validation</th>
+                            <td id="summaryMatch">--</td>
+                        </tr>
 
-</h6>
+                        <tr>
+                            <th scope="row">Manual Review</th>
+                            <td id="summaryReview">--</td>
+                        </tr>
 
-<h3 id="predictionConfidence">
+                        <tr>
+                            <th scope="row">Similarity Score</th>
+                            <td id="summarySimilarity">--</td>
+                        </tr>
 
---
+                    </tbody>
 
-</h3>
+                </table>
 
-<div class="progress mt-3">
+            </div>
 
-<div
-id="confidenceBar"
-class="progress-bar bg-primary"
-style="width:0%;">
+        </div>
 
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-lg-3 col-md-6">
-
-<div class="metric-card">
-
-<h6>
-
-Image–Text Similarity
-
-</h6>
-
-<h3 id="similarityScore">
-
---
-
-</h3>
-
-</div>
-
-</div>
-
-<div class="col-lg-3 col-md-6">
-
-<div class="metric-card">
-
-<h6>
-
-Review Decision
-
-</h6>
-
-<h3 id="reviewStatus">
-
---
-
-</h3>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- ===================================================== -->
-<!-- AI VALIDATION -->
-<!-- ===================================================== -->
-
-<div class="card shadow border-0 mt-4">
-
-<div class="card-body">
-
-<h3 class="mb-4">
-
-AI Validation
-
-</h3>
-
-<table class="table table-bordered align-middle">
-
-<tbody>
-
-<tr>
-
-<th width="35%">
-
-Predicted Category
-
-</th>
-
-<td id="summaryCategory">
-
---
-
-</td>
-
-</tr>
-
-<tr>
-
-<th>
-
-Prediction Confidence
-
-</th>
-
-<td id="summaryConfidence">
-
---
-
-</td>
-
-</tr>
-
-<tr>
-
-<th>
-
-Image–Text Validation
-
-</th>
-
-<td id="summaryMatch">
-
---
-
-</td>
-
-</tr>
-
-<tr>
-
-<th>
-
-Manual Review
-
-</th>
-
-<td id="summaryReview">
-
---
-
-</td>
-
-</tr>
-
-<tr>
-
-<th>
-
-Similarity Score
-
-</th>
-
-<td id="summarySimilarity">
-
---
-
-</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-
-<!-- ===================================================== -->
+    </section>
 
 </div>
 
@@ -660,7 +591,7 @@ Similarity Score
 <!-- EXPLAINABLE AI ASSESSMENT -->
 <!-- ===================================================== -->
 
-<div class="card shadow border-0 mt-4" id="explainabilityCard">
+<div class="card ci-dashboard-card ci-evidence-card border-0 mt-4" id="explainabilityCard">
 
     <div class="card-body">
 
@@ -675,35 +606,35 @@ Similarity Score
         <div class="row g-3">
 
             <div class="col-md-6">
-                <div class="border rounded p-3 h-100">
+                <div class="ci-evidence-item h-100">
                     <small class="text-muted">Backend Decision</small>
                     <h5 id="xaiDecision" class="mt-2 mb-0">--</h5>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <div class="border rounded p-3 h-100">
+                <div class="ci-evidence-item h-100">
                     <small class="text-muted">Taxonomy Status</small>
                     <h5 id="xaiTaxonomyStatus" class="mt-2 mb-0">--</h5>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <div class="border rounded p-3 h-100">
+                <div class="ci-evidence-item h-100">
                     <small class="text-muted">Catalog Support</small>
                     <h5 id="xaiTaxonomySupport" class="mt-2 mb-0">--</h5>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <div class="border rounded p-3 h-100">
+                <div class="ci-evidence-item h-100">
                     <small class="text-muted">Taxonomy Support Margin</small>
                     <h5 id="xaiTaxonomyMargin" class="mt-2 mb-0">--</h5>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <div class="border rounded p-3 h-100">
+                <div class="ci-evidence-item h-100">
                     <small class="text-muted">Decision-Engine Duplicate Score</small>
                     <h5 id="xaiDuplicateScore" class="mt-2 mb-0">--</h5>
                     <small class="text-muted">
@@ -713,7 +644,7 @@ Similarity Score
             </div>
 
             <div class="col-md-6">
-                <div class="border rounded p-3 h-100">
+                <div class="ci-evidence-item h-100">
                     <small class="text-muted">Best Alternative Category</small>
                     <h5 id="xaiAlternativeCategory" class="mt-2 mb-0">--</h5>
                     <small id="xaiAlternativeSupport" class="text-muted">
@@ -742,7 +673,7 @@ Similarity Score
 <!-- SIMILAR PRODUCTS -->
 <!-- ===================================================== -->
 
-<div class="card shadow border-0 mt-4">
+<div class="card ci-dashboard-card ci-similar-card border-0 mt-4">
 
 <div class="card-body">
 
@@ -785,7 +716,7 @@ No similar products available.
 <!-- DUPLICATE TABLE -->
 <!-- ===================================================== -->
 
-<div class="card shadow border-0 mt-4">
+<div class="card ci-dashboard-card ci-details-card border-0 mt-4">
 
 <div class="card-body">
 
@@ -865,7 +796,7 @@ No results
 
     <p class="text-muted mb-1">
 
-        OpenCLIP • PyTorch • FastAPI • FAISS • Multimodal AI
+        OpenCLIP &bull; PyTorch &bull; FastAPI &bull; FAISS &bull; Multimodal AI
 
     </p>
 

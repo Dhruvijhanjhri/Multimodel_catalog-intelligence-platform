@@ -1,4 +1,4 @@
-import importlib
+﻿import importlib
 import sys
 import types
 import unittest
@@ -323,6 +323,7 @@ class TestPredictAPI(unittest.TestCase):
             response = self.client.put(
                 "/review-queue/1/reject",
                 params={
+                    "review_reason": "incorrect_ai_category",
                     "corrected_category": "Footwear",
                     "feedback": "Incorrect category",
                 },
@@ -344,10 +345,80 @@ class TestPredictAPI(unittest.TestCase):
         self.assertEqual(saved_values[3], "Rejected")
         self.assertEqual(saved_values[4], "Footwear")
         self.assertEqual(saved_values[5], "Incorrect category")
+        self.assertEqual(saved_values[6], "incorrect_ai_category")
 
         conn.commit.assert_called_once()
         conn.close.assert_called_once()
 
+
+    def test_reject_image_title_mismatch_without_category(self):
+        conn = MagicMock()
+        cursor = MagicMock()
+        conn.cursor.return_value.__enter__.return_value = cursor
+        cursor.fetchone.return_value = (
+            "seller-item-1",
+            "Pending",
+            101,
+            202,
+        )
+        cursor.rowcount = 1
+
+        with patch.object(
+            self.api,
+            "get_connection",
+            return_value=conn,
+        ):
+            response = self.client.put(
+                "/review-queue/1/reject",
+                params={
+                    "review_reason": "image_title_mismatch",
+                    "feedback": "Image does not match product title",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+
+        insert_calls = [
+            c for c in cursor.execute.call_args_list
+            if "INSERT INTO product_reviews" in c.args[0]
+        ]
+        saved_values = insert_calls[0].args[1]
+
+        self.assertIsNone(saved_values[4])
+        self.assertEqual(
+            saved_values[6],
+            "image_title_mismatch",
+        )
+
+        conn.commit.assert_called_once()
+        conn.close.assert_called_once()
+
+
+    def test_reject_invalid_reason_returns_422_without_database_access(self):
+        with patch.object(self.api, "get_connection") as get_connection:
+            response = self.client.put(
+                "/review-queue/1/reject",
+                params={
+                    "review_reason": "unknown_reason",
+                    "corrected_category": "Footwear",
+                },
+            )
+
+        self.assertEqual(response.status_code, 422)
+        get_connection.assert_not_called()
+
+
+    def test_reject_category_reason_requires_corrected_category(self):
+        with patch.object(self.api, "get_connection") as get_connection:
+            response = self.client.put(
+                "/review-queue/1/reject",
+                params={
+                    "review_reason": "incorrect_ai_category",
+                },
+            )
+
+        self.assertEqual(response.status_code, 422)
+        get_connection.assert_not_called()
 
     def test_processed_review_is_not_recorded_twice(self):
         conn = MagicMock()

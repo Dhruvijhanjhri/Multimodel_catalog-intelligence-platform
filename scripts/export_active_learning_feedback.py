@@ -12,14 +12,11 @@ Safety rules:
 """
 
 from pathlib import Path
+import argparse
 import sys
-
 import pandas as pd
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-
 from services.database.postgres import get_connection
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = PROJECT_ROOT / "data" / "active_learning"
@@ -35,9 +32,6 @@ VALID_CATEGORIES = {
     "Home_Kitchen",
 }
 
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-
 QUERY = """
 SELECT DISTINCT ON (pr.product_id)
     pr.id AS review_id,
@@ -46,6 +40,7 @@ SELECT DISTINCT ON (pr.product_id)
     pr.reviewer,
     pr.decision,
     pr.corrected_category,
+    pr.review_reason,
     pr.feedback,
     pr.created_at AS review_created_at,
 
@@ -95,6 +90,16 @@ def resolve_image_path(value):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Export reviewed feedback for Active Learning."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview eligible and excluded records without writing output.",
+    )
+    args = parser.parse_args()
+
     if not TRAIN_FILE.exists():
         raise FileNotFoundError(
             f"Original training split not found: {TRAIN_FILE}"
@@ -110,10 +115,13 @@ def main():
         print("No product reviews found. No export written.")
         return
 
-    # Only explicitly corrected labels are accepted for now.
+    # Only explicitly confirmed AI-category corrections are accepted.
+    # Legacy reviews with no structured reason are excluded.
     df["training_label"] = None
+
     corrected_mask = (
         df["decision"].eq("Rejected")
+        & df["review_reason"].eq("incorrect_ai_category")
         & df["corrected_category"].notna()
     )
 
@@ -123,7 +131,9 @@ def main():
         .str.strip()
     )
 
+    # Validate corrected labels.
     valid_label_mask = df["training_label"].isin(VALID_CATEGORIES)
+
     missing_label_mask = df["training_label"].isna() | (
         df["training_label"].astype(str).str.strip().eq("")
     )
@@ -155,13 +165,26 @@ def main():
 
     original_train_mask = df["dataset_membership"].eq("original_train")
 
+    has_title_mask = (
+        df["title"].notna()
+        & df["title"].astype(str).str.strip().ne("")
+    )
+
     eligible_mask = (
         valid_label_mask
         & ~original_train_mask
         & image_exists_mask
-        & df["title"].notna()
-        & df["title"].astype(str).str.strip().ne("")
+        & has_title_mask
     )
+
+    # Assign one primary exclusion reason to each ineligible record.
+    df["exclusion_reason"] = None
+
+    df.loc[missing_label_mask, "exclusion_reason"] = "missing_or_unconfirmed_label"
+    df.loc[invalid_label_mask, "exclusion_reason"] = "invalid_corrected_label"
+    df.loc[original_train_mask, "exclusion_reason"] = "already_in_original_train"
+    df.loc[~image_exists_mask, "exclusion_reason"] = "missing_image_file"
+    df.loc[~has_title_mask, "exclusion_reason"] = "missing_title"
 
     training_df = df.loc[eligible_mask].copy()
 
@@ -176,7 +199,11 @@ def main():
 
     # Keep the schema expected by the current embedding pipeline,
     # plus useful review audit fields.
-    training_df.to_parquet(OUTPUT_FILE, index=False)
+    if args.dry_run:
+        print("\nDRY RUN: No output file was written.")
+    else:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        training_df.to_parquet(OUTPUT_FILE, index=False)
 
     print()
     print("-" * 50)
@@ -184,6 +211,20 @@ def main():
     print("-" * 50)
     print("Latest reviews                 :", len(df))
     print("Approved reviews excluded     :", int(df["decision"].eq("Approved").sum()))
+    print(
+        "Missing review reason          :",
+        int(df["review_reason"].isna().sum()),
+    )
+    print(
+        "Non-category rejection reasons :",
+        int(
+            (
+                df["decision"].eq("Rejected")
+                & df["review_reason"].notna()
+                & ~df["review_reason"].eq("incorrect_ai_category")
+            ).sum()
+        ),
+    )
     print("Invalid corrected labels      :", int(invalid_label_mask.sum()))
     print("Original training items       :", int(original_train_mask.sum()))
     print("Missing image files           :", int((~image_exists_mask).sum()))
@@ -191,11 +232,34 @@ def main():
     print("Excluded overall              :", len(df) - len(training_df))
     print()
     print("Eligible label distribution:")
+    if args.dry_run and not training_df.empty:
+        print("\nEligible product details:")
+        print(
+            training_df[
+                [
+                    "product_id",
+                    "item_id",
+                    "title",
+                    "predicted_category",
+                    "corrected_category",
+                    "review_reason",
+                    "image_path",
+                ]
+            ].to_string(index=False)
+        )
     if training_df.empty:
         print("No eligible samples.")
     else:
         print(training_df["training_label"].value_counts().to_string())
 
+    print()
+    print("Exclusion reasons:")
+    excluded_df = df.loc[~eligible_mask]
+
+    if excluded_df.empty:
+        print("No excluded records.")
+    else:
+        print(excluded_df["exclusion_reason"].value_counts().to_string())
     print()
     print("Output:", OUTPUT_FILE)
     print()

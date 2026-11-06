@@ -18,51 +18,235 @@
         rel="stylesheet">
 
     <style>
+        :root {
+            --seller-primary: #3157d5;
+            --seller-primary-dark: #2445b5;
+            --seller-bg: #f4f6fb;
+            --seller-text: #18243a;
+            --seller-muted: #718096;
+            --seller-border: #e7ebf2;
+        }
 
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f8f9fa;
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            background: var(--seller-bg);
+            color: var(--seller-text);
+        }
+
+        .navbar {
+            border-bottom: 1px solid var(--seller-border);
         }
 
         .navbar-brand {
-            font-weight: 700;
+            font-weight: 750;
+            letter-spacing: -0.4px;
+        }
+
+        main.container {
+            max-width: 1320px;
+            min-height: 75vh;
         }
 
         .page-header {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(120deg, #172d59, #3157d5);
+            color: white;
+            border-radius: 20px;
+            padding: 38px;
+            box-shadow: 0 12px 30px rgba(31, 57, 112, 0.14);
+        }
+
+        .page-header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            letter-spacing: -1px;
+        }
+
+        .page-header p {
+            color: rgba(255,255,255,.78) !important;
+            max-width: 650px;
+            line-height: 1.7;
+        }
+
+        .page-header .badge {
+            background: rgba(255,255,255,.16) !important;
+            color: white;
+            border: 1px solid rgba(255,255,255,.22);
+            padding: 8px 12px;
+        }
+
+        .stat-card,
+        .action-card,
+        #myProducts,
+        #bulkUpload,
+        #addProduct,
+        .workflow-card {
             background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--seller-border);
+            border-radius: 17px;
+            box-shadow: 0 5px 18px rgba(24, 36, 58, .045);
         }
 
         .stat-card {
-            background: white;
-            border: 0;
-            border-radius: 14px;
-            padding: 24px;
+            padding: 23px 25px;
             height: 100%;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .stat-card:hover,
+        .action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 26px rgba(24, 36, 58, .09);
+        }
+
+        .stat-card h6 {
+            font-size: .88rem;
+            font-weight: 600;
         }
 
         .stat-card h3 {
-            font-weight: 700;
-            margin-top: 8px;
+            color: var(--seller-text);
+            font-size: 2rem;
+            font-weight: 750;
+            margin: 10px 0 5px;
         }
 
         .action-card {
-            background: white;
-            border: 0;
-            border-radius: 16px;
-            padding: 28px;
+            padding: 27px;
             height: 100%;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            transition: transform .2s ease, box-shadow .2s ease;
         }
 
         .action-icon {
-            font-size: 2rem;
-            margin-bottom: 15px;
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 15px;
+            background: #edf2ff;
+            color: var(--seller-primary);
+            font-size: 1.7rem;
+            margin-bottom: 20px;
         }
 
+        .action-card h4 {
+            font-size: 1.15rem;
+            color: var(--seller-text);
+        }
+
+        .action-card p {
+            font-size: .92rem;
+            line-height: 1.65;
+            flex-grow: 1;
+        }
+
+        .btn-primary {
+            background: var(--seller-primary);
+            border-color: var(--seller-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--seller-primary-dark);
+            border-color: var(--seller-primary-dark);
+        }
+
+        .workspace-open {
+            align-self: flex-start;
+            margin-top: 15px;
+        }
+
+        #myProducts,
+        #bulkUpload,
+        #addProduct {
+            overflow: hidden;
+        }
+
+        #myProducts .card-body,
+        #bulkUpload .card-body,
+        #addProduct .card-body {
+            padding: 30px !important;
+        }
+
+        .workspace-back {
+            font-size: .9rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            border-color: #dce2ec;
+            border-radius: 9px;
+            padding: 11px 13px;
+        }
+
+        .form-control:focus {
+            border-color: var(--seller-primary);
+            box-shadow: 0 0 0 .2rem rgba(49, 87, 213, .12);
+        }
+
+        .table {
+            font-size: .9rem;
+        }
+
+        .table thead th {
+            background: #f5f7fb;
+            color: #526078;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            white-space: nowrap;
+            padding: 14px;
+        }
+
+        .table tbody td {
+            padding: 15px 14px;
+            vertical-align: middle;
+        }
+
+        .workflow-card {
+            padding: 27px;
+            margin-top: 28px;
+        }
+
+        .workflow-step {
+            height: 100%;
+            padding: 18px 12px;
+            border-radius: 13px;
+            background: #f7f8fc;
+        }
+
+        .workflow-icon {
+            width: 50px;
+            height: 50px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 13px;
+            border-radius: 50%;
+            background: #e8eeff;
+            color: var(--seller-primary);
+            font-size: 1.4rem;
+        }
+
+        footer {
+            border-top: 1px solid var(--seller-border);
+        }
+
+        @media (max-width: 767px) {
+            .page-header {
+                padding: 26px 22px;
+            }
+
+            #myProducts .card-body,
+            #bulkUpload .card-body,
+            #addProduct .card-body {
+                padding: 20px !important;
+            }
+
+            .stat-card {
+                padding: 19px;
+            }
+        }
     </style>
 
 </head>
@@ -115,6 +299,7 @@
 ===================================================== -->
 
 <main class="container py-5">
+<div id="sellerWorkspaceOverview">
 
 
     <!-- PAGE HEADER -->
@@ -224,7 +409,7 @@
 
         <!-- ADD PRODUCT -->
 
-        <div class="col-lg-3">
+        <div class="col-lg-4 col-md-6">
 
             <div class="action-card">
 
@@ -243,22 +428,20 @@
 
                 </p>
 
-                <a
-                    href="#addProduct"
-                    class="btn btn-primary">
-
+                <button
+                    type="button"
+                    class="btn btn-primary workspace-open"
+                    data-target="addProduct">
                     Add Product
-
-                </a>
+                </button>
 
             </div>
 
         </div>
 
-
         <!-- MY PRODUCTS -->
 
-        <div class="col-lg-3">
+        <div class="col-lg-4 col-md-6">
 
             <div class="action-card">
 
@@ -275,7 +458,12 @@
 
                 </p>
 
-                <a href="#myProducts" class="btn btn-outline-primary">View Products</a>
+                <button
+                    type="button"
+                    class="btn btn-outline-primary workspace-open"
+                    data-target="myProducts">
+                    View Products
+                </button>
 
             </div>
 
@@ -283,7 +471,7 @@
 
         <!-- BULK CATALOG UPLOAD -->
 
-        <div class="col-lg-3">
+        <div class="col-lg-4 col-md-6">
 
             <div class="action-card">
 
@@ -302,46 +490,12 @@
 
                 </p>
 
-                <a
-                    href="#bulkUpload"
-                    class="btn btn-outline-primary">
-
+                <button
+                    type="button"
+                    class="btn btn-outline-primary workspace-open"
+                    data-target="bulkUpload">
                     Upload Catalog
-
-                </a>
-
-            </div>
-
-        </div>
-
-        <!-- AI INTELLIGENCE -->
-
-        <div class="col-lg-3">
-
-            <div class="action-card">
-
-                <div class="action-icon">
-                    &#x1F9E0; 
-                </div>
-
-                <h4 class="fw-bold">
-                    AI Product Intelligence
-                </h4>
-
-                <p class="text-muted">
-
-                    Analyze a product using multimodal AI
-                    for category, validation and similarity.
-
-                </p>
-
-                <a
-                    href="/analyse"
-                    class="btn btn-outline-success">
-
-                    Analyze Product
-
-                </a>
+                </button>
 
             </div>
 
@@ -349,10 +503,67 @@
 
     </div>
 
+    <!-- PRODUCT WORKFLOW -->
+    <div class="workflow-card mt-4">
+        <div class="p-4">
+            <h4 class="fw-bold mb-4">How Product Processing Works</h4>
+
+            <div class="row text-center g-4">
+                <div class="col-md-3">
+                    <div class="workflow-step">
+                        <div class="workflow-icon">&#128230;</div>
+                        <strong>1. Product Submission</strong>
+                        <p class="text-muted small mt-2 mb-0">
+                            Submit product details and images through the seller workspace.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="workflow-step">
+                        <div class="workflow-icon">&#129302;</div>
+                        <strong>2. AI Analysis</strong>
+                        <p class="text-muted small mt-2 mb-0">
+                            AI analyses product information and predicts catalog attributes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="workflow-step">
+                        <div class="workflow-icon">&#128100;</div>
+                        <strong>3. Human Review</strong>
+                        <p class="text-muted small mt-2 mb-0">
+                            Products requiring verification are sent for human review.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="workflow-step">
+                        <div class="workflow-icon">&#9989;</div>
+                        <strong>4. Catalog Ready</strong>
+                        <p class="text-muted small mt-2 mb-0">
+                            Approved products become ready for the catalog.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <!-- closes sellerWorkspaceOverview -->
+
     <!-- MY PRODUCTS -->
     <div
         id="myProducts"
         class="card border-0 shadow-sm mt-5">
+
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <button type="button" class="btn btn-outline-secondary workspace-back">
+                &larr; Back to Workspace
+            </button>
+        </div>
 
         <div class="card-body p-4">
 
@@ -422,6 +633,12 @@
     <div
         id="bulkUpload"
         class="card border-0 shadow-sm mt-5">
+
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <button type="button" class="btn btn-outline-secondary workspace-back">
+                &larr; Back to Workspace
+            </button>
+        </div>
 
         <div class="card-body p-4">
 
@@ -513,6 +730,12 @@
     <div
         id="addProduct"
         class="card border-0 shadow-sm mt-5">
+
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <button type="button" class="btn btn-outline-secondary workspace-back">
+                &larr; Back to Workspace
+            </button>
+        </div>
 
         <div class="card-body p-4">
 
@@ -656,100 +879,7 @@
 
     </div>
 
-    <div class="card border-0 shadow-sm mt-5">
-
-        <div class="card-body p-4">
-
-            <h4 class="fw-bold mb-4">
-                Product Workflow
-            </h4>
-
-            <div class="row text-center g-4">
-
-                <div class="col-md-3">
-
-                    <div class="fs-2">
-                        ðŸ“¤
-                    </div>
-
-                    <strong>
-                        1. Create
-                    </strong>
-
-                    <p class="text-muted small mt-2 mb-0">
-
-                        Upload product information and images.
-
-                    </p>
-
-                </div>
-
-
-                <div class="col-md-3">
-
-                    <div class="fs-2">
-                        ðŸ§ 
-                    </div>
-
-                    <strong>
-                        2. AI Analysis
-                    </strong>
-
-                    <p class="text-muted small mt-2 mb-0">
-
-                        AI analyzes the product catalog data.
-
-                    </p>
-
-                </div>
-
-
-                <div class="col-md-3">
-
-                    <div class="fs-2">
-                        ðŸ‘¤
-                    </div>
-
-                    <strong>
-                        3. Human Review
-                    </strong>
-
-                    <p class="text-muted small mt-2 mb-0">
-
-                        Suspicious products can be reviewed.
-
-                    </p>
-
-                </div>
-
-
-                <div class="col-md-3">
-
-                    <div class="fs-2">
-                        âœ…
-                    </div>
-
-                    <strong>
-                        4. Catalog Ready
-                    </strong>
-
-                    <p class="text-muted small mt-2 mb-0">
-
-                        Approved products become catalog-ready.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
 </main>
-
 
 <!-- =====================================================
      FOOTER

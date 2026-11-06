@@ -498,3 +498,580 @@ h6,
         margin-top: 1rem !important;
     }
 }
+
+/* =========================================================
+   PRODUCT INTELLIGENCE — HEADER AND HERO REFINEMENT
+   ========================================================= */
+
+.ci-header {
+    gap: 24px;
+    padding: 8px 0 4px;
+}
+
+.ci-brand {
+    min-width: 0;
+}
+
+.ci-brand .display-5 {
+    margin-bottom: 8px !important;
+}
+
+.ci-tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.ci-tech-stack span {
+    padding: 5px 10px;
+    color: var(--ci-primary);
+    background: #eaf0f8;
+    border: 1px solid #dce6f1;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+}
+
+.ci-header-actions {
+    flex-shrink: 0;
+}
+
+.ci-hero {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.ci-eyebrow {
+    display: inline-block;
+    color: var(--ci-accent);
+    font-size: 0.73rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+}
+
+.ci-hero-title {
+    max-width: 700px;
+    font-size: clamp(2rem, 3.5vw, 3.1rem);
+    line-height: 1.16;
+    letter-spacing: -0.045em;
+}
+
+.ci-hero-title span {
+    display: block;
+    color: var(--ci-primary);
+}
+
+.ci-hero-description {
+    max-width: 680px;
+    font-size: 1.02rem;
+    line-height: 1.8;
+}
+
+.ci-hero-actions .btn {
+    min-height: 46px;
+}
+
+.ci-helper-text {
+    font-size: 0.84rem;
+}
+
+.ci-capability-card {
+    border-top: 3px solid var(--ci-accent) !important;
+}
+
+.ci-capability-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--ci-border);
+}
+
+.ci-capability-item:first-of-type {
+    padding-top: 4px;
+}
+
+.ci-capability-item:last-child {
+    padding-bottom: 2px;
+    border-bottom: 0;
+}
+
+.ci-capability-number {
+    display: flex;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    color: var(--ci-accent);
+    background: var(--ci-accent-soft);
+    border-radius: 9px;
+    font-size: 0.75rem;
+    font-weight: 750;
+}
+
+.ci-capability-item strong {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--ci-text);
+    font-size: 0.94rem;
+}
+
+.ci-capability-item p {
+    line-height: 1.55;
+}
+
+@media (max-width: 767.98px) {
+    .ci-header {
+        align-items: flex-start !important;
+        flex-direction: column;
+    }
+
+    .ci-header-actions {
+        width: 100%;
+    }
+
+    .ci-hero-title {
+        font-size: clamp(1.9rem, 7vw, 2.5rem);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ci-header-actions .btn {
+        flex: 1 1 auto;
+    }
+
+    .ci-hero-actions {
+        flex-direction: column;
+    }
+
+    .ci-hero-actions .btn {
+        width: 100%;
+    }
+
+    .ci-capability-item {
+        gap: 11px;
+    }
+}
+
+/* =========================================================
+   PRODUCT INTELLIGENCE — ANALYSIS INPUT AND EMPTY STATE
+   ========================================================= */
+
+.ci-workspace-card {
+    overflow: hidden;
+    border: 1px solid var(--ci-border) !important;
+    border-radius: var(--ci-radius);
+    box-shadow: var(--ci-shadow);
+}
+
+.ci-workspace-card > .card-body {
+    padding: clamp(20px, 3vw, 32px);
+}
+
+.ci-section-heading h4 {
+    color: var(--ci-text);
+    letter-spacing: -0.025em;
+}
+
+.ci-section-heading p {
+    line-height: 1.65;
+}
+
+.ci-workspace-card .form-label {
+    color: var(--ci-text);
+    font-size: 0.9rem;
+}
+
+.ci-workspace-card .form-control,
+.ci-workspace-card .form-select {
+    min-height: 44px;
+    border-color: var(--ci-border);
+    border-radius: 9px;
+}
+
+.ci-workspace-card textarea.form-control {
+    min-height: 100px;
+}
+
+.ci-workspace-card .form-control:focus,
+.ci-workspace-card .form-select:focus {
+    border-color: var(--ci-primary);
+    box-shadow: 0 0 0 3px rgba(36, 75, 122, 0.1);
+}
+
+.ci-workspace-card .form-text {
+    color: var(--ci-muted);
+    line-height: 1.5;
+}
+
+.ci-preview-area {
+    min-height: 90px;
+    padding: 18px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+}
+
+.ci-preview-area img {
+    max-width: 100%;
+    background: #ffffff;
+}
+
+.ci-empty-state {
+    overflow: hidden;
+    border: 1px solid var(--ci-border) !important;
+    border-radius: var(--ci-radius);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: var(--ci-shadow);
+}
+
+.ci-empty-state h4 {
+    color: var(--ci-text);
+    letter-spacing: -0.025em;
+}
+
+.ci-empty-state p {
+    line-height: 1.75;
+}
+
+.ci-analysis-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.ci-flow-step {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--ci-text);
+    font-size: 0.84rem;
+    font-weight: 650;
+}
+
+.ci-flow-number {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    color: var(--ci-accent);
+    background: var(--ci-accent-soft);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 750;
+}
+
+.ci-flow-arrow {
+    color: #94a3b8;
+    font-size: 1.1rem;
+}
+
+@media (max-width: 575.98px) {
+    .ci-analysis-flow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        width: fit-content;
+        margin: 0 auto;
+    }
+
+    .ci-flow-arrow {
+        display: none;
+    }
+
+    .ci-workspace-card .d-flex.justify-content-end {
+        display: block !important;
+    }
+
+    .ci-workspace-card .d-flex.justify-content-end .btn {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   PRODUCT INTELLIGENCE — RESULTS DASHBOARD
+   ========================================================= */
+
+/* Dashboard tab navigation */
+
+.dashboard-tabs {
+    border: 1px solid var(--ci-border) !important;
+    border-radius: var(--ci-radius);
+    box-shadow: var(--ci-shadow) !important;
+}
+
+.dashboard-tabs .card-body {
+    padding: 8px !important;
+}
+
+.dashboard-tab-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dashboard-tab-list .nav-link {
+    padding: 11px 18px;
+    color: var(--ci-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    font-size: 0.88rem;
+    font-weight: 650;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.dashboard-tab-list .nav-link:hover {
+    color: var(--ci-primary);
+    background: #f1f5f9;
+}
+
+.dashboard-tab-list .nav-link.active {
+    color: #ffffff;
+    background: var(--ci-primary);
+    border-color: var(--ci-primary);
+}
+
+/* Dashboard panels */
+
+.analysis-tab-panel {
+    min-width: 0;
+}
+
+.analysis-tab-panel[hidden] {
+    display: none !important;
+}
+
+.ci-dashboard-card {
+    overflow: hidden;
+    border: 1px solid var(--ci-border) !important;
+    border-radius: var(--ci-radius);
+    box-shadow: var(--ci-shadow);
+}
+
+.ci-dashboard-card > .card-body {
+    padding: clamp(20px, 3vw, 30px);
+}
+
+/* Summary metric cards */
+
+.ci-metric-card {
+    min-height: 145px;
+    padding: 20px;
+    background: #ffffff;
+    border: 1px solid var(--ci-border);
+    border-top: 3px solid var(--ci-primary);
+    border-radius: 12px;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.ci-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+}
+
+.ci-metric-label {
+    display: block;
+    margin-bottom: 14px;
+    color: var(--ci-muted);
+    font-size: 0.8rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+}
+
+.ci-metric-card h3 {
+    margin: 0;
+    color: var(--ci-text);
+    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.ci-confidence-progress {
+    height: 7px;
+    overflow: hidden;
+    background: #e8edf3;
+    border-radius: 20px;
+}
+
+.ci-confidence-progress .progress-bar {
+    border-radius: 20px;
+}
+
+/* AI validation table */
+
+.ci-validation-table {
+    margin-bottom: 0;
+}
+
+.ci-validation-table th {
+    width: 35%;
+    color: var(--ci-text);
+    background: #f8fafc;
+    font-size: 0.86rem;
+    font-weight: 650;
+}
+
+.ci-validation-table td {
+    color: var(--ci-text);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+/* Responsive adjustments */
+
+@media (max-width: 575.98px) {
+    .dashboard-tab-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-tab-list .nav-link {
+        padding: 10px 8px;
+        font-size: 0.8rem;
+    }
+
+    .ci-metric-card {
+        min-height: 120px;
+    }
+
+    .ci-validation-table th {
+        width: 45%;
+    }
+}
+/* =========================================================
+   PRODUCT INTELLIGENCE — AI EVIDENCE CARDS
+   ========================================================= */
+
+.ci-evidence-card {
+    border-top: 3px solid var(--ci-accent) !important;
+}
+
+.ci-evidence-item {
+    padding: 18px;
+    background: #f8fafc;
+    border: 1px solid var(--ci-border);
+    border-radius: 11px;
+    transition: background 150ms ease, border-color 150ms ease;
+}
+
+.ci-evidence-item:hover {
+    background: #ffffff;
+    border-color: #b9c9dc;
+}
+
+.ci-evidence-item small:first-child {
+    display: block;
+    color: var(--ci-muted);
+    font-size: 0.77rem;
+    font-weight: 650;
+    line-height: 1.5;
+}
+
+.ci-evidence-item h5 {
+    color: var(--ci-text);
+    font-size: 1.08rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.ci-evidence-item small.text-muted {
+    line-height: 1.5;
+}
+
+#explainabilityCard .alert {
+    padding: 18px 20px;
+    border: 1px solid #dce5ef;
+    border-radius: 11px;
+    background: #f1f5f9;
+    color: var(--ci-text);
+}
+
+#explainabilityCard .alert h6 {
+    color: var(--ci-primary);
+}
+
+/* =========================================================
+   PRODUCT INTELLIGENCE — SIMILAR PRODUCTS AND DETAILS
+   ========================================================= */
+
+/* Similar products */
+
+.ci-similar-card,
+.ci-details-card {
+    border-top: 3px solid var(--ci-primary) !important;
+}
+
+.ci-similar-card h3,
+.ci-details-card h3 {
+    color: var(--ci-text);
+    font-size: 1.25rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+}
+
+#similarCount {
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 650;
+}
+
+#similarProducts {
+    min-width: 0;
+}
+
+#similarProducts > .text-center {
+    padding: 38px 16px !important;
+    background: #f8fafc;
+    border: 1px dashed var(--ci-border);
+    border-radius: 11px;
+}
+
+/* Detailed similarity table */
+
+.ci-details-card .table-responsive {
+    border: 1px solid var(--ci-border);
+    border-radius: 10px;
+}
+
+.ci-details-card .table {
+    margin-bottom: 0;
+}
+
+.ci-details-card .table thead th {
+    padding: 14px 16px;
+    color: var(--ci-muted);
+    background: #f8fafc;
+    font-size: 0.77rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.ci-details-card .table tbody td {
+    padding: 14px 16px;
+    vertical-align: middle;
+}
+
+.ci-details-card .table tbody tr:hover {
+    background: #f8fafc;
+}
+
+@media (max-width: 575.98px) {
+    .ci-similar-card .card-body,
+    .ci-details-card .card-body {
+        padding: 18px !important;
+    }
+
+    .ci-similar-card .d-flex.justify-content-between {
+        align-items: flex-start !important;
+        gap: 12px;
+    }
+}

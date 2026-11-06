@@ -511,8 +511,25 @@ async function loadSellerProducts() {
             const reviewStatus = product.workflow_status || "Not Reviewed";
             const details = [];
 
+            if (product.review_reason) {
+                const reasonLabels = {
+                    incorrect_ai_category: "Incorrect AI Category",
+                    image_title_mismatch: "Image and Title Mismatch",
+                    duplicate_product: "Duplicate Product",
+                    invalid_listing: "Invalid Listing"
+                };
+
+                details.push(
+                    `Reason: ${escapeHtml(
+                        reasonLabels[product.review_reason] || product.review_reason
+                    )}`
+                );
+            }
+
             if (product.corrected_category) {
-                details.push(`Corrected category: ${escapeHtml(product.corrected_category)}`);
+                details.push(
+                    `Corrected category: ${escapeHtml(product.corrected_category)}`
+                );
             }
 
             if (product.review_feedback) {
@@ -641,3 +658,68 @@ if (bulkAnalyzeBtn) {
         }
     });
 }
+
+// =====================================================
+// Seller Workspace Navigation
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    const overview = document.getElementById("sellerWorkspaceOverview");
+
+    const sections = [
+        document.getElementById("addProduct"),
+        document.getElementById("myProducts"),
+        document.getElementById("bulkUpload")
+    ].filter(Boolean);
+
+    if (!overview || sections.length === 0) {
+        return;
+    }
+
+    function showWorkspace() {
+        overview.style.display = "block";
+
+        sections.forEach(section => {
+            section.style.display = "none";
+        });
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+    function openSection(targetId) {
+        const targetSection = sections.find(
+            section => section.id === targetId
+        );
+
+        if (!targetSection) {
+            return;
+        }
+
+        overview.style.display = "none";
+
+        sections.forEach(section => {
+            section.style.display =
+                section === targetSection ? "block" : "none";
+        });
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+    document.querySelectorAll(".workspace-open").forEach(button => {
+        button.addEventListener("click", () => {
+            openSection(button.dataset.target);
+        });
+    });
+
+    document.querySelectorAll(".workspace-back").forEach(button => {
+        button.addEventListener("click", showWorkspace);
+    });
+
+    showWorkspace();
+});

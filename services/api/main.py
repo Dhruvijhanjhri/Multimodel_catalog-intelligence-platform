@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 from pathlib import Path
 from datetime import date
@@ -673,6 +673,7 @@ def get_seller_products():
                     pp.model_version,
                     pr.decision AS review_decision,
                     pr.corrected_category,
+                    pr.review_reason,
                     pr.feedback AS review_feedback,
                     CASE
                         WHEN pr.decision IN ('Approved', 'Rejected')
@@ -705,6 +706,7 @@ def get_seller_products():
                     SELECT
                         decision,
                         corrected_category,
+                        review_reason,
                         feedback
                     FROM product_reviews
                     WHERE product_id = p.id
@@ -745,6 +747,7 @@ def get_seller_products():
                 "model_version",
                 "review_decision",
                 "corrected_category",
+                "review_reason",
                 "review_feedback",
                 "workflow_status",
             ]
@@ -1119,12 +1122,45 @@ def approve_review(item_id: int):
         conn.close()
 
 
+
 @app.put("/review-queue/{item_id}/reject")
 def reject_review(
     item_id: int,
+    review_reason: str,
     corrected_category: str | None = None,
     feedback: str | None = None,
 ):
+    valid_categories = {
+        "Electronics_Accessories",
+        "Fashion_Travel",
+        "Footwear",
+        "Furniture",
+        "Hardware_HomeImprovement",
+        "Home_Kitchen",
+    }
+
+    valid_reasons = {
+        "incorrect_ai_category",
+        "image_title_mismatch",
+        "duplicate_product",
+        "invalid_listing",
+    }
+
+    if review_reason not in valid_reasons:
+        raise HTTPException(
+            status_code=422,
+            detail="A valid review reason is required.",
+        )
+
+    if review_reason == "incorrect_ai_category":
+        if corrected_category not in valid_categories:
+            raise HTTPException(
+                status_code=422,
+                detail="A valid corrected category is required.",
+            )
+    else:
+        corrected_category = None
+
     conn = get_connection()
 
     try:
@@ -1161,7 +1197,7 @@ def reject_review(
                 conn.rollback()
                 return {
                     "success": False,
-                    "message": "Review not found"
+                    "message": "Review not found",
                 }
 
             queue_item_id, status, product_id, prediction_id = review
@@ -1170,7 +1206,9 @@ def reject_review(
                 conn.rollback()
                 return {
                     "success": False,
-                    "message": f"Review already processed with status: {status}"
+                    "message": (
+                        f"Review already processed with status: {status}"
+                    ),
                 }
 
             cursor.execute(
@@ -1183,9 +1221,10 @@ def reject_review(
                     decision,
                     corrected_category,
                     feedback,
+                    review_reason,
                     created_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                 """,
                 (
                     product_id,
@@ -1194,6 +1233,7 @@ def reject_review(
                     "Rejected",
                     corrected_category,
                     feedback,
+                    review_reason,
                 ),
             )
 
@@ -1212,7 +1252,7 @@ def reject_review(
 
         return {
             "success": updated > 0,
-            "message": "Review Rejected Successfully"
+            "message": "Review Rejected Successfully",
         }
 
     except Exception:

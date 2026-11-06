@@ -17,57 +17,325 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet">
 
-    <style>
 
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f8f9fa;
+    <style>
+        :root {
+            --navy: #102a43;
+            --blue: #2563eb;
+            --teal: #0d9488;
+            --violet: #7c3aed;
+            --orange: #ea580c;
+            --text: #243b53;
+            --muted: #64748b;
+            --surface: #ffffff;
+            --page-bg: #f4f7fc;
+            --border: #e5eaf2;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--page-bg);
+            color: var(--text);
+            margin: 0;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: rgba(255, 255, 255, 0.97) !important;
+            border-bottom: 1px solid var(--border);
+            padding: 12px 0;
+        }
+
+        .navbar-brand {
+            color: var(--navy) !important;
+            font-size: 1.15rem;
+            letter-spacing: -0.4px;
+        }
+
+        /* HERO */
         .hero {
-            min-height: 75vh;
+            min-height: 76vh;
             display: flex;
             align-items: center;
+            padding: 75px 0;
+            color: white;
+            background:
+                radial-gradient(circle at 85% 20%, rgba(45, 212, 191, 0.22), transparent 30%),
+                radial-gradient(circle at 15% 90%, rgba(99, 102, 241, 0.28), transparent 35%),
+                linear-gradient(125deg, #102a43 0%, #173f70 55%, #174f75 100%);
+            overflow: hidden;
         }
 
         .hero-title {
-            font-size: 3.5rem;
-            font-weight: 700;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 750;
+            line-height: 1.12;
+            letter-spacing: -1.8px;
+            color: white;
         }
 
         .hero-subtitle {
-            font-size: 1.25rem;
-            color: #6c757d;
-            line-height: 1.7;
+            font-size: 1.13rem;
+            color: #d8e5f2;
+            line-height: 1.85;
+            max-width: 650px;
         }
 
+        .hero .badge {
+            background: rgba(255, 255, 255, 0.14) !important;
+            color: #a7f3d0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+
+        .hero .btn-primary {
+            background: #ffffff;
+            border-color: #ffffff;
+            color: #173f70;
+            font-weight: 650;
+            border-radius: 10px;
+        }
+
+        .hero .btn-primary:hover {
+            background: #dbeafe;
+            border-color: #dbeafe;
+            color: #102a43;
+            transform: translateY(-2px);
+        }
+
+        .hero .text-muted {
+            color: #c4d4e5 !important;
+        }
+
+        /* HERO CAPABILITY PANEL */
+        .hero .card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 24px 65px rgba(0, 0, 0, 0.22) !important;
+        }
+
+        .hero .card-body {
+            padding: 34px !important;
+        }
+
+        .hero .card h4 {
+            color: var(--navy);
+            font-size: 1.35rem;
+        }
+
+        .hero .card strong {
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .hero .card p {
+            color: var(--muted) !important;
+            line-height: 1.65;
+        }
+
+        /* SECTION HEADINGS */
+        section:not(.hero) {
+            padding-top: 80px !important;
+            padding-bottom: 80px !important;
+        }
+
+        section h2 {
+            color: var(--navy);
+            font-size: 2rem;
+            font-weight: 750;
+            letter-spacing: -0.6px;
+        }
+
+        section .text-center > p {
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        /* CAPABILITY CARDS */
         .feature-card {
-            background: white;
-            border: 0;
-            border-radius: 16px;
-            padding: 28px;
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 30px;
             height: 100%;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+            box-shadow: 0 5px 20px rgba(16, 42, 67, 0.045);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 32px rgba(16, 42, 67, 0.10);
         }
 
         .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 54px;
+            height: 54px;
+            border-radius: 15px;
+            background: #eff6ff;
+            color: var(--blue);
+            font-size: 1.8rem;
+            margin-bottom: 22px;
         }
 
+        .feature-card h5 {
+            color: var(--navy);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--muted);
+            font-size: 0.94rem;
+            line-height: 1.75;
+        }
+
+        /* PORTAL CARDS */
         .portal-card {
-            background: white;
-            border: 0;
-            border-radius: 16px;
-            padding: 32px;
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 34px;
             height: 100%;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 22px rgba(16, 42, 67, 0.055);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
 
+        .portal-card:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 18px 38px rgba(16, 42, 67, 0.12);
+        }
+
+        .portal-card h4 {
+            color: var(--navy);
+            font-weight: 750;
+            margin-bottom: 14px;
+        }
+
+        .portal-card p,
+        .portal-card li {
+            color: var(--muted);
+            line-height: 1.75;
+            font-size: 0.94rem;
+        }
+
+        .portal-card ul {
+            padding-left: 20px;
+            margin-bottom: 26px;
+        }
+
+        .portal-card li {
+            margin-bottom: 5px;
+        }
+
+        .portal-card .btn {
+            margin-top: auto;
+            align-self: flex-start;
+            border-radius: 9px;
+            font-weight: 600;
+            padding: 10px 18px;
+        }
+
+        .portal-card .badge {
+            align-self: flex-start;
+            border-radius: 7px;
+            padding: 8px 12px;
+            font-weight: 600;
+        }
+
+        /* FOOTER */
         footer {
-            background: white;
+            background: #102a43 !important;
+            color: white;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
 
+        footer h6 {
+            color: white;
+            font-size: 1rem;
+        }
+
+        footer p,
+        footer small {
+            color: #bdcfe0 !important;
+        }
+
+        /* BUTTONS */
+        .btn {
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--blue);
+            border-color: var(--blue);
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 991px) {
+            .hero {
+                min-height: auto;
+                padding: 65px 0;
+            }
+
+            .hero-title {
+                font-size: 2.8rem;
+            }
+
+            section:not(.hero) {
+                padding-top: 60px !important;
+                padding-bottom: 60px !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 2.35rem;
+                letter-spacing: -1px;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .hero .card-body,
+            .portal-card {
+                padding: 24px !important;
+            }
+
+            section h2 {
+                font-size: 1.7rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+            }
+        }
     </style>
 
 </head>
@@ -89,26 +357,6 @@
             Enterprise Catalog Intelligence
 
         </a>
-
-        <div class="d-flex gap-2">
-
-            <a
-                href="/seller"
-                class="btn btn-outline-primary">
-
-                Seller Portal
-
-            </a>
-
-            <a
-                href="/admin"
-                class="btn btn-primary">
-
-                Admin Dashboard
-
-            </a>
-
-        </div>
 
     </div>
 

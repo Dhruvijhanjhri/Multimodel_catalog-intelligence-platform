@@ -87,6 +87,7 @@ def create_product_reviews_table():
                 decision TEXT NOT NULL,
                 corrected_category TEXT,
                 feedback TEXT,
+                review_reason TEXT,
                 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
             )
             """

@@ -103,7 +103,12 @@ async function loadMonitoringDashboard() {
         const ingestion = metricsData.ingestion_monitoring || {};
         const queue = metricsData.review_queue_monitoring || {};
 
-        setText("accuracy", formatPercent(model.test_accuracy));
+        setText(
+            "accuracy",
+            model.test_accuracy === null || model.test_accuracy === undefined
+                ? "Not reported"
+                : formatPercent(model.test_accuracy)
+        );
         setText("averageConfidence", formatPercent(prediction.average_confidence));
         setText("lowConfidenceRate", formatPercent(prediction.low_confidence_rate));
 
@@ -118,7 +123,10 @@ async function loadMonitoringDashboard() {
         setText("processedIngestionEvents", formatNumber(ingestion.processed_events));
         setText("failedIngestionEvents", formatNumber(ingestion.failed_events));
         setText("ingestionFailureRate", formatPercent(ingestion.failure_rate));
-        setText("queueProcessingRate", formatPercent(queue.processing_rate));
+        setText(
+            "queueProcessingRate",
+            `${formatNumber(queue.processed_reviews)} / ${formatNumber(queue.total_queue_items)} (${formatPercent(queue.processing_rate)})`
+        );
 
         const qualityData = await fetchJSON("/human-feedback-quality");
 
@@ -141,18 +149,28 @@ async function loadMonitoringDashboard() {
                 ? "Validation sample threshold met"
                 : `Insufficient data · ${formatNumber(qualityData.validated_predictions)} of ${formatNumber(qualityData.minimum_validated_samples)} samples`
         );
-        setText("humanFeedbackQualityStatus", qualityData.status || "UNKNOWN");
+        setText(
+            "humanFeedbackQualityStatus",
+            qualityData.status === "INSUFFICIENT_DATA"
+                ? "Insufficient validation data"
+                : qualityData.status || "UNKNOWN"
+        );
 
         const driftData = await fetchJSON("/drift-monitoring");
 
-        setText("overallDriftStatus", driftData.overall_status || "UNKNOWN");
+        const formatMonitoringStatus = status =>
+            status === "INSUFFICIENT_DATA"
+                ? "Insufficient data"
+                : status || "UNKNOWN";
+
+        setText("overallDriftStatus", formatMonitoringStatus(driftData.overall_status));
         setText(
             "categoryDriftStatus",
-            driftData.category_distribution?.status || "UNKNOWN"
+            formatMonitoringStatus(driftData.category_distribution?.status)
         );
         setText(
             "confidenceDriftStatus",
-            driftData.confidence_distribution?.status || "UNKNOWN"
+            formatMonitoringStatus(driftData.confidence_distribution?.status)
         );
 
         renderRateChart(
